@@ -118,7 +118,8 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
         if (!a || !element) return
         const current = zoomTransform(element)
         const x = a.px * current.k + current.x, y = a.py * current.k + current.y
-        const dx = x > WIDTH * .67 ? WIDTH * .67 - x : 0
+        // Leave room for the node label as well as the desktop detail sheet.
+        const dx = x > WIDTH * .58 ? WIDTH * .52 - x : 0
         const dy = window.innerWidth <= 700 && y > HEIGHT * .52 ? HEIGHT * .52 - y : 0
         if (dx || dy) select(element).call(behavior.current.transform,
           zoomIdentity.translate(current.x + dx, current.y + dy).scale(current.k))
