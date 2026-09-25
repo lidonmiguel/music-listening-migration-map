@@ -4,7 +4,7 @@
 
 The nodes are the **top 100 MusicBrainz-ID-identified artists by recorded listens** in ListenBrainz's current UTC calendar week. This is the population of ListenBrainz sitewide submissions with usable artist MBIDs, not Spotify listeners or all music listeners. The collector fetches 300 source chart rows to get 100 distinct identified artists. Null-MBID credits are excluded, counted in `quality.excluded_missing_mbid`, and never merged with a similarly named identified artist. Repeated MBIDs retain the highest source row and receive a quality flag; their counts are never summed without evidence that the rows are disjoint. Sort by descending source count and MBID for ties.
 
-Node **area** is proportional to the recorded `listen_count` in that snapshot (radius = 42 × square root of count / largest visible count). The minimum hit area is larger than the drawn node for accessibility. A listen is not a distinct listener; neither artist chart nor graph supplies a distinct-listener count.
+Node **area** is proportional to the recorded `listen_count` in that snapshot (radius in SVG units = 42 × square root of count / 500,000). This fixed reference keeps the same count at the same visual size across dates; the scale is not recalculated from each day's largest artist. The minimum hit area is larger than the drawn node for accessibility. A listen is not a distinct listener; neither artist chart nor graph supplies a distinct-listener count.
 
 `this_week` exposes a calendar `from_ts` and `to_ts`. The `to_ts` can lie in the future; it does **not** say that listens have been collected through that day. We show the last *calculation* timestamp separately and mark the week incomplete. The source does not expose an exact last included listen timestamp.
 

@@ -4,6 +4,7 @@ import { select, zoom, zoomIdentity } from 'd3'
 const BASE = import.meta.env.BASE_URL
 const WIDTH = 1200
 const HEIGHT = 760
+const NODE_REFERENCE_LISTENS = 500000
 const COLORS = ['#86bbc5', '#d4a77d', '#aaa1cd', '#b2bf87', '#ca929c', '#8ba4d2', '#c4b478', '#91b6a2', '#c7a2b9', '#a8b8c9']
 const format = new Intl.NumberFormat('en-US')
 const dateLabel = value => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(value))
@@ -16,9 +17,8 @@ function useAnimatedPositions(artists, paused) {
   const last = useRef({})
   useEffect(() => {
     if (!artists.length) return
-    const maximum = Math.max(...artists.map(artist => artist.listen_count), 1)
     const target = Object.fromEntries(artists.map(a => [a.id, { x: a.x * WIDTH, y: a.y * HEIGHT,
-      r: 42 * Math.sqrt(a.listen_count / maximum) }]))
+      r: 42 * Math.sqrt(a.listen_count / NODE_REFERENCE_LISTENS) }]))
     if (paused || !Object.keys(last.current).length) {
       last.current = target
       setPoints(target)
