@@ -31,8 +31,13 @@ UTC = timezone.utc
 
 
 def mbids_for_listen(record: dict) -> list[str]:
-    info = record.get("track_metadata", {}).get("additional_info") or {}
-    values = info.get("artist_mbids") or ([info["artist_mbid"]] if info.get("artist_mbid") else [])
+    metadata = record.get("track_metadata") or {}
+    mapping = metadata.get("mbid_mapping") or {}
+    info = metadata.get("additional_info") or {}
+    # A full dump may only contain client-supplied IDs. Prefer server-resolved
+    # credits when present, and audit every fallback to unverified client IDs.
+    values = mapping.get("artist_mbids") or info.get("artist_mbids") or (
+        [info["artist_mbid"]] if info.get("artist_mbid") else [])
     if not isinstance(values, list):
         return []
     found = []
@@ -72,7 +77,8 @@ def prepare_db(connection: sqlite3.Connection) -> None:
             PRIMARY KEY (week, person, artist)) WITHOUT ROWID;
         CREATE TABLE names (artist TEXT PRIMARY KEY, name TEXT NOT NULL) WITHOUT ROWID;
         CREATE TABLE quality (week TEXT PRIMARY KEY, missing_id INTEGER DEFAULT 0,
-            missing_user INTEGER DEFAULT 0, input_rows INTEGER DEFAULT 0) WITHOUT ROWID;
+            missing_user INTEGER DEFAULT 0, input_rows INTEGER DEFAULT 0,
+            client_submitted_id_rows INTEGER DEFAULT 0) WITHOUT ROWID;
     """)
 
 
@@ -111,19 +117,24 @@ def scan_archive(archive: Path, conn: sqlite3.Connection, year: int,
                     if not ids:
                         conn.execute("UPDATE quality SET missing_id=missing_id+1 WHERE week=?", (week,))
                         continue
+                    metadata = record.get("track_metadata") or {}
+                    mapping = metadata.get("mbid_mapping") or {}
+                    if not mapping.get("artist_mbids"):
+                        conn.execute("UPDATE quality SET client_submitted_id_rows=client_submitted_id_rows+1 WHERE week=?", (week,))
                     username = record.get("user_name")
                     person = (hmac.digest(key, username.encode("utf-8"), "sha256")
                               if isinstance(username, str) and username else None)
                     if person is None:
                         conn.execute("UPDATE quality SET missing_user=missing_user+1 WHERE week=?", (week,))
-                    metadata = record.get("track_metadata") or {}
-                    name = metadata.get("artist_name") if len(ids) == 1 else None
+                    mapped_names = {item.get("artist_mbid"): item.get("artist_credit_name")
+                                    for item in (mapping.get("artists") or []) if isinstance(item, dict)}
                     for artist in ids:
                         conn.execute("INSERT INTO totals VALUES(?,?,1) ON CONFLICT(week,artist) "
                                      "DO UPDATE SET listens=listens+1", (week, artist))
                         if person:
                             conn.execute("INSERT INTO audience VALUES(?,?,?,1) ON CONFLICT(week,person,artist) "
                                          "DO UPDATE SET listens=listens+1", (week, person, artist))
+                        name = mapped_names.get(artist) or (metadata.get("artist_name") if len(ids) == 1 else None)
                         if name and isinstance(name, str):
                             conn.execute("INSERT OR IGNORE INTO names VALUES(?,?)", (artist, name.strip()[:160]))
                 conn.commit()
@@ -184,7 +195,7 @@ def publish_year(conn: sqlite3.Connection, year: int, captured: date, digest: st
         rows = conn.execute("SELECT artist,listens FROM totals WHERE week=? ORDER BY listens DESC,artist LIMIT 100", (week,)).fetchall()
         if len(rows) < 100:
             continue
-        quality_row = conn.execute("SELECT missing_id,missing_user,input_rows FROM quality WHERE week=?", (week,)).fetchone()
+        quality_row = conn.execute("SELECT missing_id,missing_user,input_rows,client_submitted_id_rows FROM quality WHERE week=?", (week,)).fetchone()
         if quality_row is None:
             continue
         names = dict(conn.execute("SELECT artist,name FROM names WHERE artist IN (" + ",".join("?" for _ in rows) + ")",
@@ -210,7 +221,8 @@ def publish_year(conn: sqlite3.Connection, year: int, captured: date, digest: st
                        "archive_id": archive_id, "archive_sha256": digest,
                        "archive_captured_date": captured.isoformat(), "method": "each listen credited once per distinct valid artist MBID"},
             "quality": {"input_rows": quality_row[2], "excluded_missing_mbid": quality_row[0],
-                        "missing_user_rows": quality_row[1]},
+                        "missing_user_rows": quality_row[1],
+                        "client_submitted_id_rows": quality_row[3]},
             "artists": artists, "weekly_edges": edges,
             "weekly_relationship_status": "measured_weighted_jaccard" if can_overlap else "unavailable_missing_user_ids",
             "reference_edges": [], "reference": None,

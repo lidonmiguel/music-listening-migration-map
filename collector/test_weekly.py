@@ -51,7 +51,7 @@ class WeeklyRules(unittest.TestCase):
                 prepare_db(db)
                 for i in range(100):
                     db.execute("INSERT INTO totals VALUES(?,?,?)", ("2026-W01", mbid(i), 10 if i < 2 else 1))
-                db.execute("INSERT INTO quality VALUES(?,?,?,?)", ("2026-W01", 0, 0, 120))
+                db.execute("INSERT INTO quality VALUES(?,?,?,?,?)", ("2026-W01", 0, 0, 120, 0))
                 for user in range(10):
                     for artist in (mbid(0), mbid(1)):
                         db.execute("INSERT INTO audience VALUES(?,?,?,?)",
@@ -91,7 +91,13 @@ class WeeklyRules(unittest.TestCase):
                 months = scan_archive(compressed, db, 2026, {"2026-W01"})
                 self.assertEqual(months, {(2025, 12), (2026, 1)})
                 self.assertEqual(db.execute("SELECT listens FROM totals").fetchone(), (1,))
+                self.assertEqual(db.execute("SELECT client_submitted_id_rows FROM quality").fetchone(), (1,))
                 self.assertNotIn("private-listener", str(db.execute("SELECT * FROM audience").fetchall()))
+
+    def test_server_mapping_takes_precedence_over_client_ids(self):
+        record = {"track_metadata": {"mbid_mapping": {"artist_mbids": [mbid(1)]},
+                                     "additional_info": {"artist_mbids": [mbid(2)]}}}
+        self.assertEqual(mbids_for_listen(record), [mbid(1)])
 
 
 if __name__ == "__main__":
