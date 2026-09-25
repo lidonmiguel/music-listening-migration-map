@@ -1,0 +1,58 @@
+name: Collect and deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  collect-build-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Collect public data
+        run: python collector/collect.py
+      - name: Validate public data rules
+        run: |
+          python -m unittest discover -s collector -p 'test_*.py' -v
+          python collector/validate.py
+      - name: Build static site
+        run: |
+          npm ci
+          npm run build
+      - name: Preserve new public snapshots
+        if: github.event_name != 'pull_request'
+        run: |
+          git add public/data
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Archive public ListenBrainz chart snapshot'
+            git push origin HEAD:main
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

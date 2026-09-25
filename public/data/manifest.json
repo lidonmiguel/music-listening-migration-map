@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "snapshots": [
+    {
+      "date": "2026-09-25",
+      "path": "snapshots/2026-09-25.json",
+      "source_signature": "963c44a3079b67ef28d4a3881eaf8b391270aa5c6c6c0e6b21d1ca1fa36b8362",
+      "source_last_updated_utc": "2026-09-23T02:52:34Z"
+    }
+  ]
+}
