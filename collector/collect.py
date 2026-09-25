@@ -135,7 +135,7 @@ def add_daily_activity(payload: dict | None, artists: list[dict], monday: date, 
 
 
 def fetch_affinity(ids: list[str]) -> list[dict]:
-    batches = [ids[i:i + 20] for i in range(0, 100, 20)]
+    batches = [ids[i:i + 20] for i in range(0, len(ids), 20)]
     def fetch(batch):
         rows = request_json(LABS, body=[{"artist_mbids": batch, "algorithm": ALGORITHM}])
         if not isinstance(rows, list):
