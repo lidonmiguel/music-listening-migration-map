@@ -1,7 +1,7 @@
 import unittest
 from datetime import date, datetime, timezone
 
-from collect import affinity_edges, build_snapshot, ranked_artists, validated_window
+from collect import add_daily_activity, affinity_edges, build_snapshot, ranked_artists, validated_window
 
 
 def mbid(index):
@@ -58,6 +58,17 @@ class ArtistRules(unittest.TestCase):
         self.assertEqual([(a["x"], a["y"]) for a in first["artists"]],
                          [(a["x"], a["y"]) for a in second["artists"]])
         self.assertEqual(second["artists"][0]["change_since_previous_snapshot"], 0)
+
+    def test_inconsistent_weekday_rows_are_suppressed(self):
+        artists, _ = ranked_artists(self.chart["artists"])
+        activity = {key: self.chart[key] for key in ("range", "from_ts", "to_ts", "last_updated")}
+        activity["artist_evolution_activity"] = [
+            {"artist_mbid": mbid(0), "time_unit": "Monday", "listen_count": 1500},
+            {"artist_mbid": mbid(0), "time_unit": "Tuesday", "listen_count": 1500}]
+        summary = add_daily_activity(activity, artists, date(2026, 9, 21), self.now)
+        self.assertEqual(summary["excluded_conflicting_artists"], 1)
+        self.assertEqual(artists[0]["reported_daily_activity"], [])
+        self.assertIn("daily_rows_exceed_weekly_chart", artists[0]["quality_status"])
 
 
 if __name__ == "__main__":

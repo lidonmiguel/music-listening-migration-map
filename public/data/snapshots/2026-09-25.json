@@ -1,7 +1,8 @@
 {
   "schema_version": 2,
+  "layout_version": "community_neighborhood_v2",
   "snapshot_date": "2026-09-25",
-  "captured_at_utc": "2026-09-25T13:49:34.621884Z",
+  "captured_at_utc": "2026-09-25T14:02:23.991677Z",
   "population": "ListenBrainz sitewide submissions; MBID-identified artists only",
   "window": {
     "period_start_utc": "2026-09-21T00:00:00Z",
@@ -12,14 +13,15 @@
   "artist_source": "ListenBrainz /1/stats/sitewide/artists",
   "daily_activity": {
     "status": "partial_top_artists",
-    "artists_with_rows": 19,
+    "artists_with_rows": 8,
+    "excluded_conflicting_artists": 11,
     "source_last_updated_utc": "2026-09-23T02:53:52Z"
   },
   "affinity": {
     "source": "ListenBrainz Labs similar-artists index",
     "algorithm": "session_based_days_7500_session_300_contribution_5_threshold_10_limit_100_filter_True_skip_30",
     "method": "seed_max_normalized_session_score_v1",
-    "retrieved_at_utc": "2026-09-25T13:49:34.621884Z",
+    "retrieved_at_utc": "2026-09-25T14:02:23.991677Z",
     "window_matches_chart": false,
     "shared_listener_counts_available": false,
     "rows_received": 9294,
@@ -42,115 +44,80 @@
       "id": "0d79fe8e-ba27-4859-bb8c-2f255f346853",
       "name": "BTS",
       "listen_count": 461090,
-      "quality_status": [],
-      "rank": 1,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 402265
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 397563
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 1,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.39717,
-      "y": 0.62808,
+      "x": 0.27158,
+      "y": 0.53481,
       "distinct_listener_count": null
     },
     {
       "id": "f09d2950-e3c6-47b2-b21c-2bad2cd3f616",
       "name": "Agust D",
       "listen_count": 49697,
-      "quality_status": [],
-      "rank": 2,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 34059
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 30270
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 2,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.89049,
-      "y": 0.65111,
+      "x": 0.88676,
+      "y": 0.33764,
       "distinct_listener_count": null
     },
     {
       "id": "23c8056b-ee13-4cfc-a772-2f5292e35bb5",
       "name": "Jung Kook",
       "listen_count": 30345,
-      "quality_status": [],
-      "rank": 3,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 23547
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 20162
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 3,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.19343,
-      "y": 0.20315,
+      "x": 0.60713,
+      "y": 0.88943,
       "distinct_listener_count": null
     },
     {
       "id": "58f1e354-ecbc-4fd3-aa25-97eb1d9bd8b9",
       "name": "RM",
       "listen_count": 25708,
-      "quality_status": [],
-      "rank": 4,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 22147
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 20081
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 4,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c07",
-      "x": 0.28687,
-      "y": 0.88522,
+      "x": 0.29471,
+      "y": 0.7772,
       "distinct_listener_count": null
     },
     {
       "id": "83096042-3785-481e-8843-dee69f1aad12",
       "name": "V",
       "listen_count": 20987,
-      "quality_status": [],
-      "rank": 5,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 12680
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 12819
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 5,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c07",
-      "x": 0.32217,
-      "y": 0.8703,
+      "x": 0.14555,
+      "y": 0.67312,
       "distinct_listener_count": null
     },
     {
@@ -169,11 +136,11 @@
           "listen_count": 5136
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c07",
-      "x": 0.3086,
-      "y": 0.90078,
+      "x": 0.22686,
+      "y": 0.73433,
       "distinct_listener_count": null
     },
     {
@@ -192,34 +159,27 @@
           "listen_count": 7112
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.82806,
-      "y": 0.26259,
+      "x": 0.89003,
+      "y": 0.67605,
       "distinct_listener_count": null
     },
     {
       "id": "d2582c77-6b0f-4b2f-802f-8f3cad1a5fec",
       "name": "Jimin",
       "listen_count": 16564,
-      "quality_status": [],
-      "rank": 8,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 10076
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 7731
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 8,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.12517,
-      "y": 0.27324,
+      "x": 0.2452,
+      "y": 0.20728,
       "distinct_listener_count": null
     },
     {
@@ -238,34 +198,27 @@
           "listen_count": 7069
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.53011,
-      "y": 0.59671,
+      "x": 0.68084,
+      "y": 0.38311,
       "distinct_listener_count": null
     },
     {
       "id": "355cc194-b8db-4af2-8678-c7ad54213f4b",
       "name": "Latto",
       "listen_count": 13871,
-      "quality_status": [],
-      "rank": 10,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 9051
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 7966
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 10,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.40239,
-      "y": 0.12178,
+      "x": 0.25109,
+      "y": 0.81708,
       "distinct_listener_count": null
     },
     {
@@ -284,11 +237,11 @@
           "listen_count": 5486
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.487,
-      "y": 0.39543,
+      "x": 0.40226,
+      "y": 0.35297,
       "distinct_listener_count": null
     },
     {
@@ -307,11 +260,11 @@
           "listen_count": 4350
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.44417,
-      "y": 0.6057,
+      "x": 0.70535,
+      "y": 0.59384,
       "distinct_listener_count": null
     },
     {
@@ -330,11 +283,11 @@
           "listen_count": 4818
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c08",
-      "x": 0.18319,
-      "y": 0.80832,
+      "x": 0.88174,
+      "y": 0.82318,
       "distinct_listener_count": null
     },
     {
@@ -353,34 +306,27 @@
           "listen_count": 4364
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.5648,
-      "y": 0.52643,
+      "x": 0.33365,
+      "y": 0.63131,
       "distinct_listener_count": null
     },
     {
       "id": "e941e097-0f9e-496d-a381-dd74a953682c",
       "name": "박효신",
       "listen_count": 8460,
-      "quality_status": [],
-      "rank": 15,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 4260
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 4356
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 15,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.54398,
-      "y": 0.11,
+      "x": 0.76891,
+      "y": 0.20292,
       "distinct_listener_count": null
     },
     {
@@ -390,11 +336,11 @@
       "quality_status": [],
       "rank": 16,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.46037,
-      "y": 0.39549,
+      "x": 0.53122,
+      "y": 0.67956,
       "distinct_listener_count": null
     },
     {
@@ -413,34 +359,27 @@
           "listen_count": 3572
         }
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.48292,
-      "y": 0.64179,
+      "x": 0.73664,
+      "y": 0.69816,
       "distinct_listener_count": null
     },
     {
       "id": "2a7ef045-ca10-4cb5-8fe9-1f5d38e84bc2",
       "name": "GloRilla",
       "listen_count": 7083,
-      "quality_status": [],
-      "rank": 18,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 3492
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 3592
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 18,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.81199,
-      "y": 0.79006,
+      "x": 0.42022,
+      "y": 0.89099,
       "distinct_listener_count": null
     },
     {
@@ -450,34 +389,27 @@
       "quality_status": [],
       "rank": 19,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.41416,
-      "y": 0.48245,
+      "x": 0.31336,
+      "y": 0.63995,
       "distinct_listener_count": null
     },
     {
       "id": "b95ce3ff-3d05-4e87-9e01-c97b66af13d4",
       "name": "Eminem",
       "listen_count": 6748,
-      "quality_status": [],
-      "rank": 20,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 3653
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 3484
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 20,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.44887,
-      "y": 0.51616,
+      "x": 0.6653,
+      "y": 0.70649,
       "distinct_listener_count": null
     },
     {
@@ -487,11 +419,11 @@
       "quality_status": [],
       "rank": 21,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.49666,
-      "y": 0.58514,
+      "x": 0.683,
+      "y": 0.7375,
       "distinct_listener_count": null
     },
     {
@@ -501,11 +433,11 @@
       "quality_status": [],
       "rank": 22,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.52316,
-      "y": 0.53431,
+      "x": 0.71213,
+      "y": 0.67289,
       "distinct_listener_count": null
     },
     {
@@ -515,11 +447,11 @@
       "quality_status": [],
       "rank": 23,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.54647,
-      "y": 0.57733,
+      "x": 0.58301,
+      "y": 0.43704,
       "distinct_listener_count": null
     },
     {
@@ -529,11 +461,11 @@
       "quality_status": [],
       "rank": 24,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.50559,
-      "y": 0.52203,
+      "x": 0.32968,
+      "y": 0.67146,
       "distinct_listener_count": null
     },
     {
@@ -543,11 +475,11 @@
       "quality_status": [],
       "rank": 25,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.42015,
-      "y": 0.44568,
+      "x": 0.71241,
+      "y": 0.26481,
       "distinct_listener_count": null
     },
     {
@@ -557,11 +489,11 @@
       "quality_status": [],
       "rank": 26,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.55588,
-      "y": 0.49883,
+      "x": 0.37578,
+      "y": 0.29174,
       "distinct_listener_count": null
     },
     {
@@ -571,11 +503,11 @@
       "quality_status": [],
       "rank": 27,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.54644,
-      "y": 0.47194,
+      "x": 0.3137,
+      "y": 0.28015,
       "distinct_listener_count": null
     },
     {
@@ -585,11 +517,11 @@
       "quality_status": [],
       "rank": 28,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.44401,
-      "y": 0.57436,
+      "x": 0.29406,
+      "y": 0.63384,
       "distinct_listener_count": null
     },
     {
@@ -599,11 +531,11 @@
       "quality_status": [],
       "rank": 29,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.41122,
-      "y": 0.5125,
+      "x": 0.30475,
+      "y": 0.50424,
       "distinct_listener_count": null
     },
     {
@@ -613,11 +545,11 @@
       "quality_status": [],
       "rank": 30,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.51982,
-      "y": 0.41867,
+      "x": 0.44289,
+      "y": 0.41284,
       "distinct_listener_count": null
     },
     {
@@ -627,11 +559,11 @@
       "quality_status": [],
       "rank": 31,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.48969,
-      "y": 0.55699,
+      "x": 0.7814,
+      "y": 0.37165,
       "distinct_listener_count": null
     },
     {
@@ -641,11 +573,11 @@
       "quality_status": [],
       "rank": 32,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.53681,
-      "y": 0.49789,
+      "x": 0.61082,
+      "y": 0.35057,
       "distinct_listener_count": null
     },
     {
@@ -655,11 +587,11 @@
       "quality_status": [],
       "rank": 33,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c08",
-      "x": 0.17175,
-      "y": 0.78199,
+      "x": 0.73901,
+      "y": 0.66566,
       "distinct_listener_count": null
     },
     {
@@ -669,11 +601,11 @@
       "quality_status": [],
       "rank": 34,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.43157,
-      "y": 0.42003,
+      "x": 0.53179,
+      "y": 0.57749,
       "distinct_listener_count": null
     },
     {
@@ -683,11 +615,11 @@
       "quality_status": [],
       "rank": 35,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.50834,
-      "y": 0.47241,
+      "x": 0.38051,
+      "y": 0.70827,
       "distinct_listener_count": null
     },
     {
@@ -697,11 +629,11 @@
       "quality_status": [],
       "rank": 36,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.42907,
-      "y": 0.50281,
+      "x": 0.73919,
+      "y": 0.33219,
       "distinct_listener_count": null
     },
     {
@@ -711,11 +643,11 @@
       "quality_status": [],
       "rank": 37,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.4679,
-      "y": 0.51592,
+      "x": 0.44267,
+      "y": 0.47137,
       "distinct_listener_count": null
     },
     {
@@ -725,34 +657,27 @@
       "quality_status": [],
       "rank": 38,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.46954,
-      "y": 0.6203,
+      "x": 0.3203,
+      "y": 0.60836,
       "distinct_listener_count": null
     },
     {
       "id": "d27808c8-d3a6-4bbe-acc2-22d5e19f3bca",
       "name": "CORTIS",
       "listen_count": 4938,
-      "quality_status": [],
-      "rank": 39,
-      "reported_daily_activity": [
-        {
-          "date": "2026-09-21",
-          "listen_count": 8605
-        },
-        {
-          "date": "2026-09-22",
-          "listen_count": 7997
-        }
+      "quality_status": [
+        "daily_rows_exceed_weekly_chart"
       ],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "rank": 39,
+      "reported_daily_activity": [],
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.73824,
-      "y": 0.18002,
+      "x": 0.41287,
+      "y": 0.13057,
       "distinct_listener_count": null
     },
     {
@@ -762,11 +687,11 @@
       "quality_status": [],
       "rank": 40,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.53587,
-      "y": 0.44727,
+      "x": 0.61263,
+      "y": 0.28707,
       "distinct_listener_count": null
     },
     {
@@ -776,11 +701,11 @@
       "quality_status": [],
       "rank": 41,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.5107,
-      "y": 0.60532,
+      "x": 0.58322,
+      "y": 0.48408,
       "distinct_listener_count": null
     },
     {
@@ -790,11 +715,11 @@
       "quality_status": [],
       "rank": 42,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.48974,
-      "y": 0.47007,
+      "x": 0.69253,
+      "y": 0.43852,
       "distinct_listener_count": null
     },
     {
@@ -804,11 +729,11 @@
       "quality_status": [],
       "rank": 43,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.50793,
-      "y": 0.39152,
+      "x": 0.74023,
+      "y": 0.37148,
       "distinct_listener_count": null
     },
     {
@@ -818,11 +743,11 @@
       "quality_status": [],
       "rank": 44,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c10",
-      "x": 0.86494,
-      "y": 0.69769,
+      "x": 0.27101,
+      "y": 0.37682,
       "distinct_listener_count": null
     },
     {
@@ -832,11 +757,11 @@
       "quality_status": [],
       "rank": 45,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.90917,
-      "y": 0.42352,
+      "x": 0.12612,
+      "y": 0.68771,
       "distinct_listener_count": null
     },
     {
@@ -846,11 +771,11 @@
       "quality_status": [],
       "rank": 46,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.5269,
-      "y": 0.47285,
+      "x": 0.58158,
+      "y": 0.31992,
       "distinct_listener_count": null
     },
     {
@@ -860,11 +785,11 @@
       "quality_status": [],
       "rank": 47,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.55185,
-      "y": 0.54889,
+      "x": 0.75633,
+      "y": 0.28417,
       "distinct_listener_count": null
     },
     {
@@ -874,11 +799,11 @@
       "quality_status": [],
       "rank": 48,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.42551,
-      "y": 0.53153,
+      "x": 0.36822,
+      "y": 0.61674,
       "distinct_listener_count": null
     },
     {
@@ -888,11 +813,11 @@
       "quality_status": [],
       "rank": 49,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.87223,
-      "y": 0.36681,
+      "x": 0.59978,
+      "y": 0.12901,
       "distinct_listener_count": null
     },
     {
@@ -902,11 +827,11 @@
       "quality_status": [],
       "rank": 50,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.43496,
-      "y": 0.6328,
+      "x": 0.55819,
+      "y": 0.77324,
       "distinct_listener_count": null
     },
     {
@@ -916,11 +841,11 @@
       "quality_status": [],
       "rank": 51,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.4861,
-      "y": 0.5227,
+      "x": 0.31214,
+      "y": 0.58024,
       "distinct_listener_count": null
     },
     {
@@ -930,11 +855,11 @@
       "quality_status": [],
       "rank": 52,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.09,
-      "y": 0.35691,
+      "x": 0.92998,
+      "y": 0.5065,
       "distinct_listener_count": null
     },
     {
@@ -944,11 +869,11 @@
       "quality_status": [],
       "rank": 53,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.52993,
-      "y": 0.56224,
+      "x": 0.69718,
+      "y": 0.49863,
       "distinct_listener_count": null
     },
     {
@@ -958,11 +883,11 @@
       "quality_status": [],
       "rank": 54,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.41176,
-      "y": 0.57292,
+      "x": 0.22675,
+      "y": 0.57114,
       "distinct_listener_count": null
     },
     {
@@ -972,11 +897,11 @@
       "quality_status": [],
       "rank": 55,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.4624,
-      "y": 0.48838,
+      "x": 0.44302,
+      "y": 0.5305,
       "distinct_listener_count": null
     },
     {
@@ -986,11 +911,11 @@
       "quality_status": [],
       "rank": 56,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.49969,
-      "y": 0.44571,
+      "x": 0.64655,
+      "y": 0.49358,
       "distinct_listener_count": null
     },
     {
@@ -1000,11 +925,11 @@
       "quality_status": [],
       "rank": 57,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c06",
-      "x": 0.38282,
-      "y": 0.53693,
+      "x": 0.83114,
+      "y": 0.52394,
       "distinct_listener_count": null
     },
     {
@@ -1014,11 +939,11 @@
       "quality_status": [],
       "rank": 58,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.50788,
-      "y": 0.55123,
+      "x": 0.54442,
+      "y": 0.32601,
       "distinct_listener_count": null
     },
     {
@@ -1028,11 +953,11 @@
       "quality_status": [],
       "rank": 59,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.45033,
-      "y": 0.42065,
+      "x": 0.67597,
+      "y": 0.2738,
       "distinct_listener_count": null
     },
     {
@@ -1042,11 +967,11 @@
       "quality_status": [],
       "rank": 60,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.50253,
-      "y": 0.63849,
+      "x": 0.73557,
+      "y": 0.63646,
       "distinct_listener_count": null
     },
     {
@@ -1056,11 +981,11 @@
       "quality_status": [],
       "rank": 61,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.69796,
-      "y": 0.8734,
+      "x": 0.09002,
+      "y": 0.5135,
       "distinct_listener_count": null
     },
     {
@@ -1070,11 +995,11 @@
       "quality_status": [],
       "rank": 62,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.28883,
-      "y": 0.1478,
+      "x": 0.7748,
+      "y": 0.81272,
       "distinct_listener_count": null
     },
     {
@@ -1084,11 +1009,11 @@
       "quality_status": [],
       "rank": 63,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.431,
-      "y": 0.46949,
+      "x": 0.34995,
+      "y": 0.65,
       "distinct_listener_count": null
     },
     {
@@ -1098,11 +1023,11 @@
       "quality_status": [],
       "rank": 64,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.47245,
-      "y": 0.57121,
+      "x": 0.40184,
+      "y": 0.63986,
       "distinct_listener_count": null
     },
     {
@@ -1112,11 +1037,11 @@
       "quality_status": [],
       "rank": 65,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.55409,
-      "y": 0.44473,
+      "x": 0.36884,
+      "y": 0.24829,
       "distinct_listener_count": null
     },
     {
@@ -1126,11 +1051,11 @@
       "quality_status": [],
       "rank": 66,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.51796,
-      "y": 0.50018,
+      "x": 0.62104,
+      "y": 0.41411,
       "distinct_listener_count": null
     },
     {
@@ -1140,11 +1065,11 @@
       "quality_status": [],
       "rank": 67,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c06",
-      "x": 0.32423,
-      "y": 0.53581,
+      "x": 0.82722,
+      "y": 0.37886,
       "distinct_listener_count": null
     },
     {
@@ -1154,11 +1079,11 @@
       "quality_status": [],
       "rank": 68,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.42795,
-      "y": 0.58875,
+      "x": 0.62185,
+      "y": 0.73903,
       "distinct_listener_count": null
     },
     {
@@ -1168,11 +1093,11 @@
       "quality_status": [],
       "rank": 69,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.45306,
-      "y": 0.63266,
+      "x": 0.67945,
+      "y": 0.67837,
       "distinct_listener_count": null
     },
     {
@@ -1182,11 +1107,11 @@
       "quality_status": [],
       "rank": 70,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.46194,
-      "y": 0.59409,
+      "x": 0.66281,
+      "y": 0.63038,
       "distinct_listener_count": null
     },
     {
@@ -1196,11 +1121,11 @@
       "quality_status": [],
       "rank": 71,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.39522,
-      "y": 0.56159,
+      "x": 0.29071,
+      "y": 0.44045,
       "distinct_listener_count": null
     },
     {
@@ -1210,11 +1135,11 @@
       "quality_status": [],
       "rank": 72,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.48002,
-      "y": 0.49445,
+      "x": 0.47143,
+      "y": 0.68091,
       "distinct_listener_count": null
     },
     {
@@ -1224,11 +1149,11 @@
       "quality_status": [],
       "rank": 73,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c06",
-      "x": 0.39278,
-      "y": 0.51326,
+      "x": 0.84394,
+      "y": 0.56309,
       "distinct_listener_count": null
     },
     {
@@ -1238,11 +1163,11 @@
       "quality_status": [],
       "rank": 74,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.51765,
-      "y": 0.44758,
+      "x": 0.65623,
+      "y": 0.34201,
       "distinct_listener_count": null
     },
     {
@@ -1252,11 +1177,11 @@
       "quality_status": [],
       "rank": 75,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.47324,
-      "y": 0.41686,
+      "x": 0.55427,
+      "y": 0.50904,
       "distinct_listener_count": null
     },
     {
@@ -1266,11 +1191,11 @@
       "quality_status": [],
       "rank": 76,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.44032,
-      "y": 0.44535,
+      "x": 0.6235,
+      "y": 0.48807,
       "distinct_listener_count": null
     },
     {
@@ -1280,11 +1205,11 @@
       "quality_status": [],
       "rank": 77,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c06",
-      "x": 0.34293,
-      "y": 0.53436,
+      "x": 0.82847,
+      "y": 0.42722,
       "distinct_listener_count": null
     },
     {
@@ -1294,11 +1219,11 @@
       "quality_status": [],
       "rank": 78,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.54093,
-      "y": 0.52617,
+      "x": 0.72637,
+      "y": 0.46841,
       "distinct_listener_count": null
     },
     {
@@ -1308,11 +1233,11 @@
       "quality_status": [],
       "rank": 79,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.54224,
-      "y": 0.42037,
+      "x": 0.49794,
+      "y": 0.43163,
       "distinct_listener_count": null
     },
     {
@@ -1322,11 +1247,11 @@
       "quality_status": [],
       "rank": 80,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.44192,
-      "y": 0.54334,
+      "x": 0.33995,
+      "y": 0.6031,
       "distinct_listener_count": null
     },
     {
@@ -1336,11 +1261,11 @@
       "quality_status": [],
       "rank": 81,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.42788,
-      "y": 0.56041,
+      "x": 0.27754,
+      "y": 0.59344,
       "distinct_listener_count": null
     },
     {
@@ -1350,11 +1275,11 @@
       "quality_status": [],
       "rank": 82,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c04",
-      "x": 0.46332,
-      "y": 0.44009,
+      "x": 0.35593,
+      "y": 0.31101,
       "distinct_listener_count": null
     },
     {
@@ -1364,11 +1289,11 @@
       "quality_status": [],
       "rank": 83,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.47363,
-      "y": 0.54312,
+      "x": 0.34285,
+      "y": 0.565,
       "distinct_listener_count": null
     },
     {
@@ -1378,11 +1303,11 @@
       "quality_status": [],
       "rank": 84,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.5147,
-      "y": 0.5774,
+      "x": 0.71267,
+      "y": 0.63962,
       "distinct_listener_count": null
     },
     {
@@ -1392,11 +1317,11 @@
       "quality_status": [],
       "rank": 85,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c06",
-      "x": 0.36466,
-      "y": 0.53274,
+      "x": 0.82978,
+      "y": 0.47633,
       "distinct_listener_count": null
     },
     {
@@ -1406,11 +1331,11 @@
       "quality_status": [],
       "rank": 86,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.47199,
-      "y": 0.46446,
+      "x": 0.66225,
+      "y": 0.37224,
       "distinct_listener_count": null
     },
     {
@@ -1420,11 +1345,11 @@
       "quality_status": [],
       "rank": 87,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.49346,
-      "y": 0.61416,
+      "x": 0.75705,
+      "y": 0.67075,
       "distinct_listener_count": null
     },
     {
@@ -1434,11 +1359,11 @@
       "quality_status": [],
       "rank": 88,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c05",
-      "x": 0.50027,
-      "y": 0.41743,
+      "x": 0.48476,
+      "y": 0.59443,
       "distinct_listener_count": null
     },
     {
@@ -1448,11 +1373,11 @@
       "quality_status": [],
       "rank": 89,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.45377,
-      "y": 0.46359,
+      "x": 0.825,
+      "y": 0.29892,
       "distinct_listener_count": null
     },
     {
@@ -1462,11 +1387,11 @@
       "quality_status": [],
       "rank": 90,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.49773,
-      "y": 0.49576,
+      "x": 0.57146,
+      "y": 0.39218,
       "distinct_listener_count": null
     },
     {
@@ -1476,11 +1401,11 @@
       "quality_status": [],
       "rank": 91,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.52008,
-      "y": 0.6298,
+      "x": 0.82532,
+      "y": 0.58853,
       "distinct_listener_count": null
     },
     {
@@ -1490,11 +1415,11 @@
       "quality_status": [],
       "rank": 92,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c02",
-      "x": 0.44451,
-      "y": 0.48776,
+      "x": 0.30216,
+      "y": 0.60778,
       "distinct_listener_count": null
     },
     {
@@ -1504,11 +1429,11 @@
       "quality_status": [],
       "rank": 93,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c01",
-      "x": 0.482,
-      "y": 0.44155,
+      "x": 0.70934,
+      "y": 0.3055,
       "distinct_listener_count": null
     },
     {
@@ -1518,11 +1443,11 @@
       "quality_status": [],
       "rank": 94,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c10",
-      "x": 0.88082,
-      "y": 0.68405,
+      "x": 0.18899,
+      "y": 0.54318,
       "distinct_listener_count": null
     },
     {
@@ -1532,11 +1457,11 @@
       "quality_status": [],
       "rank": 95,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "unlinked",
-      "x": 0.65215,
-      "y": 0.14738,
+      "x": 0.12997,
+      "y": 0.34395,
       "distinct_listener_count": null
     },
     {
@@ -1546,11 +1471,11 @@
       "quality_status": [],
       "rank": 96,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c06",
-      "x": 0.40878,
-      "y": 0.54185,
+      "x": 0.81709,
+      "y": 0.56328,
       "distinct_listener_count": null
     },
     {
@@ -1560,11 +1485,11 @@
       "quality_status": [],
       "rank": 97,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c09",
-      "x": 0.91253,
-      "y": 0.52048,
+      "x": 0.47606,
+      "y": 0.27853,
       "distinct_listener_count": null
     },
     {
@@ -1574,11 +1499,11 @@
       "quality_status": [],
       "rank": 98,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c09",
-      "x": 0.89478,
-      "y": 0.52024,
+      "x": 0.62394,
+      "y": 0.16147,
       "distinct_listener_count": null
     },
     {
@@ -1588,11 +1513,11 @@
       "quality_status": [],
       "rank": 99,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.45781,
-      "y": 0.55538,
+      "x": 0.58435,
+      "y": 0.71999,
       "distinct_listener_count": null
     },
     {
@@ -1602,11 +1527,11 @@
       "quality_status": [],
       "rank": 100,
       "reported_daily_activity": [],
-      "change_since_previous_snapshot": null,
-      "previous_snapshot_date": null,
+      "change_since_previous_snapshot": 0,
+      "previous_snapshot_date": "2026-09-25",
       "cluster_id": "c03",
-      "x": 0.47975,
-      "y": 0.59674,
+      "x": 0.71194,
+      "y": 0.71318,
       "distinct_listener_count": null
     }
   ],

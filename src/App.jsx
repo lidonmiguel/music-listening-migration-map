@@ -106,7 +106,7 @@ function ArtistMap({ data, selected, hovered, onSelect, onHover, search, paused,
         const x = group.reduce((sum, a) => sum + (points[a.id]?.x ?? a.x * WIDTH), 0) / group.length
         const y = group.reduce((sum, a) => sum + (points[a.id]?.y ?? a.y * HEIGHT), 0) / group.length
         return <circle key={id} cx={x} cy={y} r={65 + Math.sqrt(group.length) * 19}
-          fill={color(id)} opacity=".095" filter="url(#haze)" pointerEvents="none" />
+          fill={color(id)} opacity=".16" filter="url(#haze)" pointerEvents="none" />
       })}
       {visibleEdges.map(e => {
         const a = points[e.source], b = points[e.target]
@@ -114,8 +114,8 @@ function ArtistMap({ data, selected, hovered, onSelect, onHover, search, paused,
         const active = selected && (e.source === selected || e.target === selected)
         return <line key={e.source + e.target} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
           stroke={active ? color(byId.get(selected)?.cluster_id) : '#8495a9'}
-          strokeWidth={active ? 1 + e.strength * 2.8 : .55 + e.strength * 1.1}
-          opacity={active ? .72 : emphasis ? .075 : .18} pointerEvents="none" />
+          strokeWidth={active ? 1 + e.strength * 2.8 : .75 + e.strength * 1.4}
+          opacity={active ? .75 : emphasis ? .09 : .30} pointerEvents="none" />
       })}
       {artists.map(a => {
         const point = points[a.id]
@@ -123,7 +123,8 @@ function ArtistMap({ data, selected, hovered, onSelect, onHover, search, paused,
         const active = a.id === selected
         const nearby = neighbors.has(a.id)
         const dim = (selected && !active && !nearby) || (search && !matches(a) && !active)
-        const label = active || hovered === a.id || (!selected && !search && a.rank <= 18) || (search && matches(a))
+        const quietCorner = (point.x < 360 && point.y < 235) || (point.x > 840 && point.y < 125)
+        const label = active || hovered === a.id || (!selected && !search && a.rank <= 14 && !quietCorner) || (search && matches(a))
         return <g key={a.id} className={`artist-node ${dim ? 'muted' : ''}`}
           transform={`translate(${point.x},${point.y})`}
           onClick={event => { event.stopPropagation(); onSelect(a.id) }}
@@ -181,7 +182,9 @@ function ArtistDetail({ artist, data, onClose, onNeighbor }) {
           <span style={{ height: `${Math.max(4, day.listen_count / maximum * 62)}px`, background: color(artist.cluster_id) }} />
           <small>{dateLabel(day.date + 'T00:00:00Z')}</small>
         </div>
-      })}</div> : <p className="detail-explain">Per-day artist rows are unavailable here; absence does not mean zero listens.</p>}
+      })}</div> : <p className="detail-explain">{artist.quality_status.includes('daily_rows_exceed_weekly_chart')
+        ? 'Weekday rows conflicted with this artist’s weekly chart count and were withheld.'
+        : 'Per-day artist rows are unavailable here; absence does not mean zero listens.'}</p>}
     </div>
     <div className="movement-empty"><span>↗</span><p><b>Listener movement unavailable.</b> These undirected links do not show people switching artists. No particles or incoming/outgoing counts are displayed.</p></div>
     <p className="detail-source">Source: ListenBrainz sitewide submissions · MBID {artist.id}</p>
@@ -280,8 +283,8 @@ export default function App() {
             {clusterGroups.map(([id, members]) => <span key={id}><i style={{ background: color(id) }} />
               {members.slice().sort((a, b) => a.rank - b.rank)[0].name} <small>+{members.length - 1}</small></span>)}
           </div>
-          <div className="source-disclosure">Sitewide top 100 among artists with MusicBrainz IDs; unmatched credits excluded ({data.quality.excluded_missing_mbid} of {data.quality.rows_examined} chart rows).
-            Affinity uses a separately updated session index, not this week's shared-listener counts. No observed listener migrations.</div>
+          <div className="source-disclosure">Sitewide top 100 among artists with MusicBrainz IDs; unmatched credits excluded ({data.quality.excluded_missing_mbid} of {data.quality.rows_examined} rows).
+            Conflicting weekday rows withheld for {data.daily_activity.excluded_conflicting_artists} artists. Affinity is a separate session index; no observed migrations.</div>
         </>}
     </main>
     {help && <div className="help-scrim" onClick={() => setHelp(false)}><section className="help-sheet" onClick={e => e.stopPropagation()} aria-label="Map data explanation">

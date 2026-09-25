@@ -21,6 +21,7 @@ DATA = ROOT / "public" / "data"
 API = "https://api.listenbrainz.org/1"
 LABS = "https://labs.api.listenbrainz.org/similar-artists/json"
 ALGORITHM = "session_based_days_7500_session_300_contribution_5_threshold_10_limit_100_filter_True_skip_30"
+LAYOUT_VERSION = "community_neighborhood_v2"
 AGENT = "MusicListeningMigrationMap/0.2 (https://github.com/lidonmiguel/music-listening-migration-map)"
 UTC = timezone.utc
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -99,7 +100,8 @@ def add_daily_activity(payload: dict | None, artists: list[dict], monday: date, 
     if payload is None:
         for artist in artists:
             artist["reported_daily_activity"] = []
-        return {"status": "unavailable", "artists_with_rows": 0, "source_last_updated_utc": None}
+        return {"status": "unavailable", "artists_with_rows": 0,
+                "excluded_conflicting_artists": 0, "source_last_updated_utc": None}
     validated_window(payload, monday, now)
     if not isinstance(payload.get("artist_evolution_activity"), list):
         raise ValueError("Malformed daily artist activity")
@@ -115,10 +117,19 @@ def add_daily_activity(payload: dict | None, artists: list[dict], monday: date, 
                 raise ValueError("Future day in daily activity")
             key = (row["artist_mbid"], observed.isoformat())
             values[key] = max(values.get(key, 0), count)
+    conflicting = 0
     for artist in artists:
-        artist["reported_daily_activity"] = [
-            {"date": day, "listen_count": count} for (mbid, day), count in sorted(values.items()) if mbid == artist["id"]]
-    return {"status": "partial_top_artists", "artists_with_rows": len({mbid for mbid, _ in values}),
+        reported = [{"date": day, "listen_count": count}
+                    for (mbid, day), count in sorted(values.items()) if mbid == artist["id"]]
+        if sum(row["listen_count"] for row in reported) > artist["listen_count"]:
+            artist["reported_daily_activity"] = []
+            artist["quality_status"].append("daily_rows_exceed_weekly_chart")
+            conflicting += 1
+        else:
+            artist["reported_daily_activity"] = reported
+    return {"status": "partial_top_artists",
+            "artists_with_rows": sum(bool(artist["reported_daily_activity"]) for artist in artists),
+            "excluded_conflicting_artists": conflicting,
             "source_last_updated_utc": iso(int(payload["last_updated"]))}
 
 
@@ -186,7 +197,8 @@ def communities(graph: nx.Graph, previous: dict | None) -> dict[str, str]:
     return {node: labels.get(node, "unlinked") for node in graph}
 
 
-def layout(graph: nx.Graph, artists: list[dict], previous: dict | None) -> dict[str, tuple[float, float]]:
+def layout(graph: nx.Graph, artists: list[dict], previous: dict | None,
+           labels: dict[str, str]) -> dict[str, tuple[float, float]]:
     old = {artist["id"]: (float(artist["x"]), float(artist["y"])) for artist in (previous or {}).get("artists", [])
            if artist["id"] in graph and "x" in artist and "y" in artist}
     if old:
@@ -201,10 +213,30 @@ def layout(graph: nx.Graph, artists: list[dict], previous: dict | None) -> dict[
         raw = nx.spring_layout(graph, pos=seeds, fixed=list(old), seed=42, iterations=85, weight="weight", k=.12)
         coords = {node: [float(x), float(y)] for node, (x, y) in raw.items()}
     else:
-        raw = nx.spring_layout(graph, seed=42, iterations=220, weight="weight", k=.18)
-        xs, ys = [p[0] for p in raw.values()], [p[1] for p in raw.values()]
-        coords = {node: [.09 + .82 * (p[0] - min(xs)) / (max(xs) - min(xs) or 1),
-                         .11 + .78 * (p[1] - min(ys)) / (max(ys) - min(ys) or 1)] for node, p in raw.items()}
+        # Each detected community gets a loose neighborhood, then its weighted
+        # spring coordinates supply the non-grid arrangement inside it.
+        anchors = [(.67, .37), (.32, .60), (.69, .68), (.40, .35),
+                   (.52, .58), (.83, .49), (.22, .73), (.81, .74),
+                   (.55, .22), (.23, .46), (.74, .24), (.47, .76)]
+        groups = defaultdict(list)
+        for node, label in labels.items():
+            if label != "unlinked":
+                groups[label].append(node)
+        coords = {}
+        for index, (label, nodes) in enumerate(sorted(groups.items(), key=lambda group: (-len(group[1]), group[0]))):
+            center = anchors[index % len(anchors)]
+            local = nx.spring_layout(graph.subgraph(nodes), seed=42 + index,
+                                     iterations=180, weight="weight")
+            span = max(max(abs(value[0]), abs(value[1])) for value in local.values()) or 1
+            rx = min(.155, .04 + .024 * math.sqrt(len(nodes)))
+            ry = min(.17, .045 + .027 * math.sqrt(len(nodes)))
+            for node, value in local.items():
+                coords[node] = [center[0] + rx * value[0] / span,
+                                center[1] + ry * value[1] / span]
+        unlinked = sorted(node for node in graph if labels[node] == "unlinked")
+        for index, node in enumerate(unlinked):
+            angle = 2 * math.pi * (index / max(len(unlinked), 1) + .07)
+            coords[node] = [.51 + .42 * math.cos(angle), .51 + .39 * math.sin(angle)]
     maximum = max(a["listen_count"] for a in artists)
     radii = {a["id"]: 5 + 26 * math.sqrt(a["listen_count"] / maximum) for a in artists}
     ids = [a["id"] for a in artists]
@@ -241,7 +273,8 @@ def build_snapshot(chart: dict, activity: dict | None, affinity: list[dict], tod
     graph = nx.Graph()
     graph.add_nodes_from(ids)
     graph.add_weighted_edges_from((edge["source"], edge["target"], edge["strength"]) for edge in edges)
-    labels, positions = communities(graph, previous), layout(graph, artists, previous)
+    labels = communities(graph, previous)
+    positions = layout(graph, artists, previous, labels)
     earlier = {a["id"]: a for a in (previous or {}).get("artists", [])} if previous and previous.get("window", {}).get("period_start_utc") == window["period_start_utc"] else {}
     for artist in artists:
         prior = earlier.get(artist["id"])
@@ -251,12 +284,11 @@ def build_snapshot(chart: dict, activity: dict | None, affinity: list[dict], tod
         artist["x"], artist["y"] = positions[artist["id"]]
         artist["distinct_listener_count"] = None
     signature = hashlib.sha256(json.dumps({
-        "week": window["period_start_utc"], "updated": window["source_last_updated_utc"],
-        "daily_updated": daily["source_last_updated_utc"],
+        "layout": LAYOUT_VERSION, "week": window["period_start_utc"],
         "artists": [(a["id"], a["listen_count"], a["reported_daily_activity"]) for a in artists],
         "affinity": [(e["source"], e["target"], e["session_score"]) for e in edges],
     }, sort_keys=True).encode()).hexdigest()
-    snapshot = {"schema_version": 2, "snapshot_date": today.isoformat(),
+    snapshot = {"schema_version": 2, "layout_version": LAYOUT_VERSION, "snapshot_date": today.isoformat(),
         "captured_at_utc": now.isoformat().replace("+00:00", "Z"),
         "population": "ListenBrainz sitewide submissions; MBID-identified artists only",
         "window": window, "artist_source": "ListenBrainz /1/stats/sitewide/artists",
@@ -288,6 +320,8 @@ def collect(today: date | None = None) -> bool:
     if manifest.get("schema_version") != 2:
         manifest = {"schema_version": 2, "snapshots": []}
     previous = json.loads((DATA / manifest["snapshots"][-1]["path"]).read_text()) if manifest["snapshots"] else None
+    if previous and previous.get("layout_version") != LAYOUT_VERSION:
+        previous = None
     snapshot, signature = build_snapshot(chart, activity, affinity, today, now, previous)
     if manifest["snapshots"] and manifest["snapshots"][-1]["source_signature"] == signature:
         print("Upstream chart, daily activity, and affinity unchanged; timeline unchanged")

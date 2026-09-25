@@ -25,6 +25,7 @@ def validate():
             assert 0 <= artist["x"] <= 1 and 0 <= artist["y"] <= 1
             assert artist["change_since_previous_snapshot"] is None or isinstance(artist["change_since_previous_snapshot"], int)
             assert all(row["date"] <= entry["date"] and row["listen_count"] >= 0 for row in artist["reported_daily_activity"])
+            assert sum(row["listen_count"] for row in artist["reported_daily_activity"]) <= artist["listen_count"]
         ids = {a["id"] for a in artists}
         edges = snapshot["edges"]
         assert 0 < len(edges) <= 250
