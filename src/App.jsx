@@ -217,7 +217,7 @@ export default function App() {
     const entry = manifest.snapshots.find(item => item.date === date)
     if (!entry) return
     setError('')
-    fetch(`${BASE}data/${entry.path}`)
+    fetch(`${BASE}data/${entry.path}?v=${entry.source_signature}`, { cache: 'no-store' })
       .then(r => { if (!r.ok) throw Error(`Snapshot HTTP ${r.status}`); return r.json() })
       .then(json => {
         if (json.schema_version !== 2 || json.artists?.length !== 100 ||
@@ -284,7 +284,7 @@ export default function App() {
               {members.slice().sort((a, b) => a.rank - b.rank)[0].name} <small>+{members.length - 1}</small></span>)}
           </div>
           <div className="source-disclosure">Sitewide top 100 among artists with MusicBrainz IDs; unmatched credits excluded ({data.quality.excluded_missing_mbid} of {data.quality.rows_examined} rows).
-            Conflicting weekday rows withheld for {data.daily_activity.excluded_conflicting_artists} artists. Affinity is a separate session index; no observed migrations.</div>
+            Conflicting weekday rows withheld for {data.daily_activity.excluded_conflicting_artists ?? 0} artists. Affinity is a separate session index; no observed migrations.</div>
         </>}
     </main>
     {help && <div className="help-scrim" onClick={() => setHelp(false)}><section className="help-sheet" onClick={e => e.stopPropagation()} aria-label="Map data explanation">
