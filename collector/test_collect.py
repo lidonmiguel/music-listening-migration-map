@@ -1,38 +1,63 @@
 import unittest
 from datetime import date, datetime, timezone
 
-from collect import estimated_flows, primary_genre, unique_recordings, validate_period
+from collect import affinity_edges, build_snapshot, ranked_artists, validated_window
 
 
-def timestamp(day):
-    return int(datetime.fromisoformat(day).replace(tzinfo=timezone.utc).timestamp())
+def mbid(index):
+    return f"00000000-0000-0000-0000-{index:012d}"
 
 
-class PublicDataRules(unittest.TestCase):
-    def test_duplicate_mbid_keeps_highest_row_without_summing(self):
-        base = {"recording_mbid": "abc", "track_name": "Song", "artist_name": "Artist"}
-        rows, duplicates = unique_recordings([{**base, "listen_count": 8}, {**base, "listen_count": 7}], "2026-09-21T00:00:00Z", 1)
-        self.assertEqual(rows[0]["play_count"], 8)
-        self.assertEqual(rows[0]["quality_status"], ["duplicate_mbid_max_row"])
-        self.assertEqual(duplicates, 1)
+class ArtistRules(unittest.TestCase):
+    def setUp(self):
+        self.today = date(2026, 9, 25)
+        self.now = datetime(2026, 9, 25, 11, tzinfo=timezone.utc)
+        self.chart = {
+            "range": "this_week", "from_ts": 1789948800, "to_ts": 1790553600,
+            "last_updated": 1790131946,
+            "artists": [{"artist_mbid": mbid(i), "artist_name": f"Artist {i}",
+                         "listen_count": 2000 - i} for i in range(100)]
+        }
 
-    def test_estimate_has_no_listener_count(self):
-        prior = [{"track_id": "a", "play_count": 30}, {"track_id": "b", "play_count": 70}]
-        now = [{"track_id": "c", "play_count": 20}, {"track_id": "d", "play_count": 80}]
-        flows = estimated_flows(prior, now)
-        self.assertAlmostEqual(flows[0]["estimated_share"], 0.06)
-        self.assertAlmostEqual(sum(x["estimated_share"] for x in flows), 1.0)
-        self.assertTrue(all(x["number_of_listeners"] is None and x["status"] == "estimated" for x in flows))
+    def test_rank_excludes_unmatched_and_keeps_duplicate_max_without_summing(self):
+        rows = self.chart["artists"] + [
+            {"artist_mbid": None, "artist_name": "Artist 0", "listen_count": 9000},
+            {"artist_mbid": mbid(1), "artist_name": "Artist 1", "listen_count": 2100}]
+        artists, quality = ranked_artists(rows)
+        self.assertEqual(len(artists), 100)
+        self.assertEqual(artists[0]["listen_count"], 2100)
+        self.assertEqual(quality["excluded_missing_mbid"], 1)
+        self.assertEqual(quality["duplicate_mbid_rows"], 1)
 
-    def test_genre_uses_genre_tags_not_other_tags(self):
-        metadata = {"tag": {"recording": [{"tag": "dance", "count": 7}, {"tag": "rock", "genre_mbid": "id", "count": 2}], "artist": [{"tag": "pop", "genre_mbid": "id", "count": 10}]}}
-        self.assertEqual(primary_genre(metadata), ("rock", "recording"))
-
-    def test_period_verifies_calendar_window_without_using_last_updated_as_end(self):
-        payload = {"range": "this_week", "from_ts": timestamp("2026-09-21"), "to_ts": timestamp("2026-09-28"), "last_updated": timestamp("2026-09-23"), "recordings": []}
-        validate_period(payload, "this_week", date(2026, 9, 21))
+    def test_invalid_calendar_window_fails(self):
+        wrong = {**self.chart, "from_ts": 1789344000}
         with self.assertRaises(ValueError):
-            validate_period(payload, "this_week", date(2026, 9, 28))
+            validated_window(wrong, date(2026, 9, 21), self.now)
+
+    def test_session_affinity_has_no_listener_count_or_direction(self):
+        ids = [mbid(0), mbid(1), mbid(2)]
+        rows = [
+            {"reference_mbid": ids[0], "artist_mbid": ids[1], "score": 20},
+            {"reference_mbid": ids[0], "artist_mbid": ids[2], "score": 10},
+            {"reference_mbid": ids[1], "artist_mbid": ids[0], "score": 20},
+            {"reference_mbid": ids[2], "artist_mbid": ids[0], "score": 10}]
+        edges, _ = affinity_edges(rows, ids)
+        self.assertEqual(len(edges), 2)
+        self.assertEqual(edges[0]["strength"], 1)
+        self.assertIsNone(edges[0]["shared_listener_count"])
+        self.assertIsNone(edges[0]["movement_listener_count"])
+
+    def test_snapshot_never_emits_movement_and_keeps_stable_positions(self):
+        ids = [mbid(i) for i in range(100)]
+        rows = [{"reference_mbid": ids[i], "artist_mbid": ids[(i + 1) % 100], "score": 20}
+                for i in range(100)]
+        first, _ = build_snapshot(self.chart, None, rows, self.today, self.now)
+        second, _ = build_snapshot(self.chart, None, rows, self.today, self.now, first)
+        self.assertEqual(first["movement"]["observed_transitions"], [])
+        self.assertEqual(len(first["artists"]), 100)
+        self.assertEqual([(a["x"], a["y"]) for a in first["artists"]],
+                         [(a["x"], a["y"]) for a in second["artists"]])
+        self.assertEqual(second["artists"][0]["change_since_previous_snapshot"], 0)
 
 
 if __name__ == "__main__":

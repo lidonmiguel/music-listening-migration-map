@@ -1,109 +1,191 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { scaleSqrt } from 'd3-scale'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { select, zoom, zoomIdentity } from 'd3'
 
 const BASE = import.meta.env.BASE_URL
-const COLORS = ['#9eb9ff', '#f5aa85', '#b8df9c', '#d8b8fb', '#f0d783', '#8ed9d3', '#e7a9bf', '#91c3e3', '#c5c8e9', '#f4c29d']
-const number = new Intl.NumberFormat('en-US')
-const percent = value => `${(value * 100).toFixed(value < 0.01 ? 2 : 1)}%`
-const shortDate = value => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(value))
-const utcTime = value => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }).format(new Date(value)) + ' UTC'
-const endDay = value => shortDate(new Date(new Date(value).getTime() - 86400000).toISOString())
+const WIDTH = 1200
+const HEIGHT = 760
+const COLORS = ['#86bbc5', '#d4a77d', '#aaa1cd', '#b2bf87', '#ca929c', '#8ba4d2', '#c4b478', '#91b6a2', '#c7a2b9', '#a8b8c9']
+const format = new Intl.NumberFormat('en-US')
+const dateLabel = value => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(value))
+const timeLabel = value => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }).format(new Date(value)) + ' UTC'
+const color = cluster => cluster === 'unlinked' ? '#8d99a8' : COLORS[(Number(cluster.slice(1)) - 1) % COLORS.length]
+const initialPaused = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false
 
-function genreColor(name, genres) {
-  const index = genres.indexOf(name)
-  return name === 'Unknown' ? '#8f99aa' : COLORS[(index < 0 ? 0 : index) % COLORS.length]
+function useAnimatedPositions(artists, paused) {
+  const [points, setPoints] = useState({})
+  const last = useRef({})
+  useEffect(() => {
+    if (!artists.length) return
+    const maximum = Math.max(...artists.map(artist => artist.listen_count), 1)
+    const target = Object.fromEntries(artists.map(a => [a.id, { x: a.x * WIDTH, y: a.y * HEIGHT,
+      r: 42 * Math.sqrt(a.listen_count / maximum) }]))
+    if (paused || !Object.keys(last.current).length) {
+      last.current = target
+      setPoints(target)
+      return
+    }
+    const start = last.current
+    const began = performance.now()
+    let frame
+    const tick = now => {
+      const t = Math.min(1, (now - began) / 850)
+      const ease = 1 - Math.pow(1 - t, 3)
+      const next = Object.fromEntries(Object.entries(target).map(([id, end]) => {
+        const from = start[id] || { ...end, r: 0 }
+        return [id, { x: from.x + (end.x - from.x) * ease,
+          y: from.y + (end.y - from.y) * ease, r: from.r + (end.r - from.r) * ease }]
+      }))
+      last.current = next
+      setPoints(next)
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [artists, paused])
+  return points
 }
 
-function Tag({ children, tone = '' }) { return <span className={`tag ${tone}`}>{children}</span> }
+function ArtistMap({ data, selected, hovered, onSelect, onHover, search, paused, focusRef }) {
+  const svgRef = useRef(null)
+  const layerRef = useRef(null)
+  const zoomRef = useRef(null)
+  const artists = data.artists
+  const points = useAnimatedPositions(artists, paused)
+  const byId = useMemo(() => new Map(artists.map(a => [a.id, a])), [artists])
+  const neighbors = useMemo(() => new Set(data.edges.filter(e => e.source === selected || e.target === selected)
+    .map(e => e.source === selected ? e.target : e.source)), [data.edges, selected])
+  const clusterGroups = useMemo(() => {
+    const groups = new Map()
+    artists.forEach(a => {
+      if (a.cluster_id === 'unlinked') return
+      if (!groups.has(a.cluster_id)) groups.set(a.cluster_id, [])
+      groups.get(a.cluster_id).push(a)
+    })
+    return [...groups].filter(([, group]) => group.length >= 3).sort((a, b) => b[1].length - a[1].length)
+  }, [artists])
 
-function Ranking({ title, period, rows, side, otherIds, selected, onSelect, genres, filterGenre, search }) {
-  return <section className="ranking card" aria-label={`${title} ranking`}>
-    <div className="rank-head"><span className="eyebrow">{side === 'previous' ? '01 / ORIGIN' : '03 / DESTINATION'}</span><h2>{title}</h2>
-      <p>{shortDate(period.period_start_utc)} — {endDay(period.period_end_utc)} · UTC calendar week</p>
-    </div>
-    <div className="rank-list">
-      {rows.map(row => {
-        const remains = otherIds.has(row.track_id)
-        const faded = (filterGenre !== 'All genres' && row.genre !== filterGenre) || (search && !`${row.title} ${row.artist}`.toLowerCase().includes(search.toLowerCase()))
-        const active = selected?.side === side && selected?.id === row.track_id
-        return <button className={`rank-row ${active ? 'active' : ''} ${faded ? 'dim' : ''}`} key={row.track_id} onClick={() => onSelect({ side, id: row.track_id })} aria-pressed={active}>
-          <span className="rank-number">{String(row.ranking).padStart(2, '0')}</span>
-          <span className="rank-marker" style={{ '--marker': genreColor(row.genre, genres) }} />
-          <span className="rank-copy"><strong title={row.title}>{row.title}</strong><small>{row.artist}</small></span>
-          <span className="rank-meta"><b>{number.format(row.play_count)}</b><small>{remains ? 'stays' : side === 'previous' ? 'leaves' : 'enters'}</small></span>
-        </button>
+  useEffect(() => {
+    const behavior = zoom().scaleExtent([.68, 5]).on('zoom', event => {
+      select(layerRef.current).attr('transform', event.transform)
+    })
+    zoomRef.current = behavior
+    select(svgRef.current).call(behavior).on('dblclick.zoom', null)
+    return () => select(svgRef.current).on('.zoom', null)
+  }, [])
+  useEffect(() => {
+    focusRef.current = {
+      focus: id => {
+        const a = byId.get(id)
+        if (!a || !zoomRef.current || !svgRef.current) return
+        const scale = 1.65
+        select(svgRef.current).call(zoomRef.current.transform,
+          zoomIdentity.translate(WIDTH * .44 - a.x * WIDTH * scale,
+            HEIGHT * .50 - a.y * HEIGHT * scale).scale(scale))
+      },
+      reset: () => select(svgRef.current).call(zoomRef.current.transform, zoomIdentity)
+    }
+  }, [byId, focusRef])
+
+  const emphasis = selected || hovered
+  const visibleEdges = selected
+    ? data.edges.filter(e => e.source === selected || e.target === selected).slice(0, 28)
+    : data.edges.slice(0, 165)
+  const matches = a => !search || a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())
+  return <svg ref={svgRef} className="landscape" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+    role="img" aria-label="Zoomable map of 100 ListenBrainz artists. Links show session-based affinity, not listener migration."
+    onClick={() => onSelect(null)}>
+    <defs>
+      <filter id="haze"><feGaussianBlur stdDeviation="35" /></filter>
+      <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+        <circle cx="2" cy="2" r="1" fill="#889eac" opacity=".13" />
+      </pattern>
+    </defs>
+    <g ref={layerRef}>
+      <rect x="-1100" y="-900" width="3400" height="2600" fill="url(#dots)" />
+      {clusterGroups.map(([id, group]) => {
+        const x = group.reduce((sum, a) => sum + (points[a.id]?.x ?? a.x * WIDTH), 0) / group.length
+        const y = group.reduce((sum, a) => sum + (points[a.id]?.y ?? a.y * HEIGHT), 0) / group.length
+        return <circle key={id} cx={x} cy={y} r={65 + Math.sqrt(group.length) * 19}
+          fill={color(id)} opacity=".095" filter="url(#haze)" pointerEvents="none" />
       })}
+      {visibleEdges.map(e => {
+        const a = points[e.source], b = points[e.target]
+        if (!a || !b) return null
+        const active = selected && (e.source === selected || e.target === selected)
+        return <line key={e.source + e.target} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+          stroke={active ? color(byId.get(selected)?.cluster_id) : '#8495a9'}
+          strokeWidth={active ? 1 + e.strength * 2.8 : .55 + e.strength * 1.1}
+          opacity={active ? .72 : emphasis ? .075 : .18} pointerEvents="none" />
+      })}
+      {artists.map(a => {
+        const point = points[a.id]
+        if (!point) return null
+        const active = a.id === selected
+        const nearby = neighbors.has(a.id)
+        const dim = (selected && !active && !nearby) || (search && !matches(a) && !active)
+        const label = active || hovered === a.id || (!selected && !search && a.rank <= 18) || (search && matches(a))
+        return <g key={a.id} className={`artist-node ${dim ? 'muted' : ''}`}
+          transform={`translate(${point.x},${point.y})`}
+          onClick={event => { event.stopPropagation(); onSelect(a.id) }}
+          onMouseEnter={() => onHover(a.id)} onMouseLeave={() => onHover(null)}
+          onFocus={() => onHover(a.id)} onBlur={() => onHover(null)}
+          role="button" tabIndex="0" aria-label={`${a.name}, rank ${a.rank}, ${format.format(a.listen_count)} recorded listens`}
+          onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(a.id) } }}>
+          <circle className="node-hit" r={Math.max(15, point.r + 5)} fill="transparent" />
+          {(active || hovered === a.id) && <circle r={point.r + 8} fill="none" stroke={color(a.cluster_id)} strokeWidth="1.4" opacity=".67" />}
+          <circle r={point.r} fill={color(a.cluster_id)} stroke={active ? '#f5e8da' : '#d9e1e6'}
+            strokeWidth={active ? 2 : .55} opacity={dim ? .24 : .89} />
+          {label && <text x={point.r + 7} y="4" className={active ? 'node-label selected' : 'node-label'}>
+            {a.name.length > 23 ? a.name.slice(0, 21) + '…' : a.name}</text>}
+          <title>{a.name} · {format.format(a.listen_count)} this-week listens · {a.cluster_id}</title>
+        </g>
+      })}
+    </g>
+  </svg>
+}
+
+function ArtistDetail({ artist, data, onClose, onNeighbor }) {
+  const byId = new Map(data.artists.map(a => [a.id, a]))
+  const links = data.edges.filter(e => e.source === artist.id || e.target === artist.id)
+    .sort((a, b) => b.strength - a.strength).slice(0, 6)
+  const peers = data.artists.filter(a => a.cluster_id === artist.cluster_id)
+  const leaders = peers.sort((a, b) => a.rank - b.rank).slice(0, 3).map(a => a.name).join(' · ')
+  return <aside className="detail-panel" aria-label="Selected artist details">
+    <div className="detail-head"><span className="micro">ARTIST / {String(artist.rank).padStart(3, '0')}</span>
+      <button className="icon-button" onClick={onClose} aria-label="Close artist details">×</button></div>
+    <div className="artist-avatar" style={{ '--artist-color': color(artist.cluster_id) }}>{artist.name.slice(0, 1).toLocaleUpperCase()}</div>
+    <h2>{artist.name}</h2>
+    <p className="community-caption"><i style={{ background: color(artist.cluster_id) }} />
+      {artist.cluster_id === 'unlinked' ? 'No published affinity links' : `Community ${artist.cluster_id.slice(1)} · ${leaders}`}</p>
+    <div className="detail-stats">
+      <div><small>RECORDED LISTENS · THIS WEEK</small><strong>{format.format(artist.listen_count)}</strong></div>
+      <div><small>CHANGE SINCE PRIOR SNAPSHOT</small><strong>{artist.change_since_previous_snapshot === null ? '—' :
+        `${artist.change_since_previous_snapshot >= 0 ? '+' : '−'}${format.format(Math.abs(artist.change_since_previous_snapshot))}`}</strong></div>
     </div>
-    <p className="rank-foot">Unique recording rank · node area = recorded listens</p>
-  </section>
-}
-
-function Graph({ previous, current, flows, selected, onSelect, genres, filterGenre, search, paused }) {
-  const sourceById = useMemo(() => new Map(previous.map(x => [x.track_id, x])), [previous])
-  const targetById = useMemo(() => new Map(current.map(x => [x.track_id, x])), [current])
-  const yLeft = index => 67 + index * 62
-  const yRight = index => 45 + index * 44
-  // With a zero-based square-root scale, circle area is proportional to listens.
-  const radius = scaleSqrt().domain([0, Math.max(1, ...[...previous, ...current].map(row => row.play_count))]).range([0, 14])
-  const matches = row => (filterGenre === 'All genres' || row.genre === filterGenre) && (!search || `${row.title} ${row.artist}`.toLowerCase().includes(search.toLowerCase()))
-  const activeFlows = selected
-    ? flows.filter(flow => selected.side === 'previous' ? flow.source_node === selected.id : flow.destination_node === selected.id)
-    : [...flows].sort((a, b) => b.estimated_share - a.estimated_share).slice(0, 40)
-  const edges = activeFlows.map((flow, index) => {
-    const a = sourceById.get(flow.source_node), b = targetById.get(flow.destination_node)
-    if (!a || !b) return null
-    const ay = yLeft(a.ranking - 1), by = yRight(b.ranking - 1)
-    const path = `M 26 ${ay} C 165 ${ay}, 285 ${by}, 454 ${by}`
-    return { ...flow, a, b, path, index, visible: matches(a) && matches(b) }
-  }).filter(Boolean)
-  return <div className="network card" aria-label="Estimated song pairing network">
-    <div className="network-label"><span className="eyebrow">02 / CONNECTIONS</span><strong>Modeled attention</strong><small>{selected ? 'All links for selected recording' : '40 strongest links shown'}</small></div>
-    <svg viewBox="0 0 480 750" role="img" aria-label="Connections from previous chart songs on the left to current chart songs on the right. Select a song in either ranking for its connections.">
-      <defs><marker id="arrow" viewBox="0 0 9 9" refX="8" refY="4.5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="#aab9cf" /></marker></defs>
-      {edges.map(edge => <path key={`${edge.source_node}|${edge.destination_node}`} id={`edge-${edge.index}`} d={edge.path} fill="none" stroke={genreColor(edge.a.genre, genres)} strokeWidth={Math.max(1, Math.sqrt(edge.estimated_share) * 31)} opacity={edge.visible ? selected ? .63 : .23 : .025} markerEnd="url(#arrow)"><title>{edge.a.title} → {edge.b.title}: {percent(edge.estimated_share)} modeled pairing share. No listener count.</title></path>)}
-      {!paused && edges.filter(e => e.visible).sort((a,b) => b.estimated_share - a.estimated_share).slice(0, 8).map(edge => <circle key={`particle-${edge.index}`} r="2.4" fill={genreColor(edge.a.genre, genres)} aria-hidden="true"><animateMotion dur={`${4.2 + edge.index % 3 * 0.8}s`} begin={`${edge.index % 8 * -.51}s`} repeatCount="indefinite" path={edge.path} /></circle>)}
-      {previous.map(row => <g key={`left-${row.track_id}`} className="node" onClick={() => onSelect({ side: 'previous', id: row.track_id })} style={{ cursor: 'pointer' }} tabIndex="0" role="button" aria-label={`Previous rank ${row.ranking}, ${row.title}, ${number.format(row.play_count)} listens`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect({ side: 'previous', id: row.track_id }) } }}>
-        <circle cx="19" cy={yLeft(row.ranking - 1)} r={radius(row.play_count)} fill={genreColor(row.genre, genres)} opacity={matches(row) ? 1 : .2} stroke={selected?.id === row.track_id ? '#ffffff' : '#101625'} strokeWidth="2" /><title>{row.title} · {number.format(row.play_count)} listens</title>
-      </g>)}
-      {current.map(row => <g key={`right-${row.track_id}`} className="node" onClick={() => onSelect({ side: 'current', id: row.track_id })} style={{ cursor: 'pointer' }} tabIndex="0" role="button" aria-label={`Current rank ${row.ranking}, ${row.title}, ${number.format(row.play_count)} listens`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect({ side: 'current', id: row.track_id }) } }}>
-        <circle cx="461" cy={yRight(row.ranking - 1)} r={radius(row.play_count)} fill={genreColor(row.genre, genres)} opacity={matches(row) ? 1 : .2} stroke={selected?.id === row.track_id ? '#ffffff' : '#101625'} strokeWidth="2" /><title>{row.title} · {number.format(row.play_count)} listens</title>
-      </g>)}
-      <text x="20" y="730" fill="#8794ad" fontSize="11">PREVIOUS</text><text x="410" y="730" fill="#8794ad" fontSize="11">CURRENT →</text>
-    </svg>
-    <div className="network-foot">Width = modeled share <span>·</span> particles = direction only</div>
-  </div>
-}
-
-function GenreMatrix({ previous, current, flows, genres, filterGenre, onGenre }) {
-  const sourceById = new Map(previous.map(x => [x.track_id, x]))
-  const targetById = new Map(current.map(x => [x.track_id, x]))
-  const left = [...new Set(previous.map(x => x.genre))], right = [...new Set(current.map(x => x.genre))]
-  const values = new Map()
-  flows.forEach(flow => {
-    const key = `${sourceById.get(flow.source_node)?.genre}|${targetById.get(flow.destination_node)?.genre}`
-    values.set(key, (values.get(key) || 0) + flow.estimated_share)
-  })
-  return <section className="matrix card" aria-label="Estimated genre pairing matrix">
-    <div className="section-top"><div><span className="eyebrow">02 / GENRE VIEW</span><h2>Within and between genres</h2></div><p>Each cell sums the same estimated song pairings. Diagonal cells pair a genre with itself.</p></div>
-    <div className="matrix-scroll"><table><thead><tr><th scope="col">FROM ↓ / TO →</th>{right.map(g => <th scope="col" key={g}><span className="genre-swatch" style={{ background: genreColor(g, genres) }} />{g}</th>)}</tr></thead>
-      <tbody>{left.map(a => <tr key={a}><th scope="row"><span className="genre-swatch" style={{ background: genreColor(a, genres) }} />{a}</th>{right.map(b => { const value = values.get(`${a}|${b}`) || 0; return <td key={b}><button className={`matrix-cell ${a === b ? 'diagonal' : ''} ${filterGenre !== 'All genres' && filterGenre !== a && filterGenre !== b ? 'dim' : ''}`} style={{ '--cell-opacity': Math.min(.72, .08 + value * 3) }} onClick={() => onGenre(a)} title={`${a} → ${b}: ${percent(value)} estimated share; no tracked listeners`}><b>{percent(value)}</b><small>{a === b ? 'within genre' : 'cross genre'}</small></button></td> })}</tr>)}</tbody></table></div>
-  </section>
-}
-
-function Details({ selected, previous, current, flows, genres, onClose }) {
-  const row = selected && (selected.side === 'previous' ? previous : current).find(x => x.track_id === selected.id)
-  const previousById = new Map(previous.map(x => [x.track_id, x]))
-  const currentById = new Map(current.map(x => [x.track_id, x]))
-  if (!row) return <section className="detail card"><span className="eyebrow">READ THE MAP</span><h2>Follow a recording</h2><p>Choose a song on either side to inspect its chart count and the estimated links touching it.</p><div className="detail-empty"><span>↗</span><p>Every link is a modeled pairing of chart shares. No listener was tracked from one recording to another.</p></div></section>
-  const counterpart = (selected.side === 'previous' ? currentById : previousById).get(row.track_id)
-  const links = flows.filter(f => selected.side === 'previous' ? f.source_node === row.track_id : f.destination_node === row.track_id).sort((a,b) => b.estimated_share - a.estimated_share).slice(0, 5)
-  const otherMap = selected.side === 'previous' ? currentById : previousById
-  return <section className="detail card" aria-live="polite"><div className="detail-top"><span className="eyebrow">RECORDING DETAIL</span><button className="icon-button" onClick={onClose} aria-label="Close recording detail">×</button></div><div className="detail-genre"><span className="genre-swatch" style={{ background: genreColor(row.genre, genres) }} />{row.genre} · {row.genre_source.replace('_', ' ')} tags</div><h2>{row.title}</h2><p className="artist-name">{row.artist}</p><div className="detail-numbers"><div><small>{selected.side === 'previous' ? 'PREVIOUS' : 'CURRENT'} RANK</small><strong>#{row.ranking}</strong></div><div><small>RECORDED LISTENS</small><strong>{number.format(row.play_count)}</strong></div></div>
-    <p className="comparison">{counterpart ? `Also visible at #${counterpart.ranking} on the ${selected.side === 'previous' ? 'current' : 'previous'} list (${number.format(counterpart.play_count)} listens).` : `Outside the ${selected.side === 'previous' ? 'current top 15' : 'previous top 10'} visible list.`} <em>Partial and full week counts are not directly comparable.</em></p>
-    <div className="detail-flow-title"><strong>{selected.side === 'previous' ? 'Modeled destinations' : 'Modeled origins'}</strong><small>Share of all visible-list pairings</small></div>
-    <ol className="flow-list">{links.map(flow => { const other = otherMap.get(selected.side === 'previous' ? flow.destination_node : flow.source_node); return <li key={`${flow.source_node}-${flow.destination_node}`}><span>{other?.title || 'Unknown'}</span><strong>{percent(flow.estimated_share)}</strong></li> })}</ol>
-    {row.quality_status.some(x => x !== 'ok') && <p className="quality-note">Quality: {row.quality_status.filter(x => x !== 'ok').join(', ').replaceAll('_', ' ')}.</p>}
-  </section>
+    <p className="detail-explain">{artist.previous_snapshot_date
+      ? `Chart-count difference since ${artist.previous_snapshot_date}, within the same UTC week; source calculations may cover more than one day.`
+      : 'No comparable prior source calculation for this artist and UTC week yet.'}</p>
+    <div className="detail-section"><div className="detail-section-title"><span>NEAREST IN THIS MAP</span><small>relative session affinity</small></div>
+      {links.length ? links.map(link => {
+        const neighbor = byId.get(link.source === artist.id ? link.target : link.source)
+        return <button key={link.source + link.target} className="neighbor" onClick={() => onNeighbor(neighbor.id)}>
+          <span><i style={{ background: color(neighbor.cluster_id) }} />{neighbor.name}</span>
+          <strong>{Math.round(link.strength * 100)}<small> / 100</small></strong>
+        </button>
+      }) : <p className="detail-explain">No strong session-affinity link among these 100 artists.</p>}
+    </div>
+    <div className="detail-section"><div className="detail-section-title"><span>REPORTED DAYS</span><small>subset of top artists</small></div>
+      {artist.reported_daily_activity.length ? <div className="daily-bars">{artist.reported_daily_activity.map(day => {
+        const maximum = Math.max(...artist.reported_daily_activity.map(d => d.listen_count), 1)
+        return <div key={day.date} title={`${day.date}: ${format.format(day.listen_count)} listens`}>
+          <span style={{ height: `${Math.max(4, day.listen_count / maximum * 62)}px`, background: color(artist.cluster_id) }} />
+          <small>{dateLabel(day.date + 'T00:00:00Z')}</small>
+        </div>
+      })}</div> : <p className="detail-explain">Per-day artist rows are unavailable here; absence does not mean zero listens.</p>}
+    </div>
+    <div className="movement-empty"><span>↗</span><p><b>Listener movement unavailable.</b> These undirected links do not show people switching artists. No particles or incoming/outgoing counts are displayed.</p></div>
+    <p className="detail-source">Source: ListenBrainz sitewide submissions · MBID {artist.id}</p>
+  </aside>
 }
 
 export default function App() {
@@ -111,53 +193,105 @@ export default function App() {
   const [date, setDate] = useState('')
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
-  const [view, setView] = useState('songs')
-  const [genre, setGenre] = useState('All genres')
-  const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
-  const [paused, setPaused] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false)
+  const [hovered, setHovered] = useState(null)
+  const [search, setSearch] = useState('')
+  const [paused, setPaused] = useState(initialPaused)
+  const [help, setHelp] = useState(false)
+  const focusRef = useRef(null)
 
   useEffect(() => {
-    fetch(`${BASE}data/manifest.json`, { cache: 'no-store' }).then(r => { if (!r.ok) throw Error(`Manifest HTTP ${r.status}`); return r.json() }).then(json => {
-      if (json.schema_version !== 1 || !Array.isArray(json.snapshots)) throw Error('Unsupported manifest')
-      setManifest(json); setDate(json.snapshots.at(-1)?.date || '')
-    }).catch(e => setError(`Chart manifest unavailable: ${e.message}`))
+    fetch(`${BASE}data/manifest.json`, { cache: 'no-store' })
+      .then(r => { if (!r.ok) throw Error(`Manifest HTTP ${r.status}`); return r.json() })
+      .then(json => {
+        if (json.schema_version !== 2 || !json.snapshots?.length) throw Error('No artist snapshots')
+        setManifest(json)
+        setDate(json.snapshots.at(-1).date)
+      }).catch(e => setError(e.message))
   }, [])
   useEffect(() => {
-    if (!date || !manifest) return
-    const entry = manifest.snapshots.find(x => x.date === date)
+    if (!manifest || !date) return
+    const entry = manifest.snapshots.find(item => item.date === date)
     if (!entry) return
-    setData(null); setSelected(null); setError('')
-    fetch(`${BASE}data/${entry.path}`).then(r => { if (!r.ok) throw Error(`Snapshot HTTP ${r.status}`); return r.json() }).then(json => {
-      if (json.schema_version !== 1 || json.previous_week.recordings.length !== 10 || json.current_week.recordings.length !== 15 || json.flows.some(f => f.status !== 'estimated' || f.number_of_listeners !== null)) throw Error('Snapshot validation failed')
-      setData(json)
-    }).catch(e => setError(e.message))
+    setError('')
+    fetch(`${BASE}data/${entry.path}`)
+      .then(r => { if (!r.ok) throw Error(`Snapshot HTTP ${r.status}`); return r.json() })
+      .then(json => {
+        if (json.schema_version !== 2 || json.artists?.length !== 100 ||
+            json.movement?.status !== 'unavailable' || json.edges?.some(e => e.kind !== 'audience_affinity')) {
+          throw Error('Artist snapshot validation failed')
+        }
+        setData(json)
+        setSelected(current => json.artists.some(a => a.id === current) ? current : null)
+      }).catch(e => setError(e.message))
   }, [date, manifest])
 
-  const previous = data?.previous_week.recordings || []
-  const current = data?.current_week.recordings || []
-  const genres = [...new Set([...previous, ...current].map(x => x.genre))].sort()
-  const priorIds = new Set(previous.map(x => x.track_id))
-  const currentIds = new Set(current.map(x => x.track_id))
-  const sharedCount = current.filter(x => priorIds.has(x.track_id)).length
-  const sourceAgeHours = data ? (Date.now() - new Date(data.current_week.source_last_updated_utc).getTime()) / 3600000 : 0
-
-  return <div className="site-shell">
-    <header className="topbar"><a className="brand" href="#top"><span className="brand-mark">♫</span><span>MUSIC / MIGRATION<span className="brand-light"> MAP</span></span></a><nav aria-label="Site sections"><a href="#explore">Explore</a><a href="#method">Method</a><a href="https://github.com/lidonmiguel/music-listening-migration-map">GitHub ↗</a></nav></header>
-    <main id="top">
-      <section className="hero"><div className="hero-copy"><div className="overline"><span className="live-dot" /> PUBLIC DATA EXPERIMENT <span className="overline-separator">/</span> WEEKLY CHARTS</div><h1>Where does the<br /><em>music go?</em></h1><p>Two weeks of songs. One map of changing chart attention. Explore what the rankings say—and where the data stops short.</p><a className="hero-link" href="#explore">Explore the map <span>↗</span></a></div><div className="hero-orbit" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" /><div className="hero-center">↗</div><div className="orbit-dot dot-one" /><div className="orbit-dot dot-two" /><div className="orbit-dot dot-three" /></div></section>
-      <section className="truth-banner" aria-label="Interpretation warning"><div className="truth-icon">i</div><div><strong>These lines are estimates, not listener journeys.</strong><p>They pair the shares of songs in two public charts under an independence assumption. No individual listening histories are used.</p></div><a href="#method">How it works ↗</a></section>
-      <section id="explore" className="explore"><div className="explore-heading"><div><span className="eyebrow">THE LISTENING LANDSCAPE</span><h2>Follow the attention</h2></div><div className="snapshot-status">{data ? <><span className="status-dot" />Snapshot {shortDate(`${data.snapshot_date}T00:00:00Z`)} · source last calculated {utcTime(data.current_week.source_last_updated_utc)}</> : 'Loading public charts…'}</div></div>
-        {error ? <div className="load-state">{error}. The site shows no invented replacement data.</div> : !data ? <div className="load-state">Loading the recorded snapshot…</div> : <>
-          <div className="metric-strip"><div><small>PREVIOUS WEEK</small><strong>10 <span>recordings</span></strong><p>{shortDate(data.previous_week.period_start_utc)}–{endDay(data.previous_week.period_end_utc)} UTC</p></div><div><small>CURRENT WEEK · INCOMPLETE</small><strong>15 <span>recordings</span></strong><p>{shortDate(data.current_week.period_start_utc)}–{endDay(data.current_week.period_end_utc)} UTC calendar week</p></div><div><small>IN BOTH VISIBLE LISTS</small><strong>{sharedCount} <span>recordings</span></strong><p>Membership, not a measured listener flow</p></div></div>
-          <div className="source-callout"><span className="callout-symbol">!</span><div><strong>Current week is incomplete{sourceAgeHours > 36 ? ' · upstream update is delayed' : ''}.</strong><span>Last calculated {utcTime(data.current_week.source_last_updated_utc)}. The source does not state an exact last-listen cutoff; raw counts are not comparable with a finished week.</span></div></div>
-          <div className="toolbar"><div className="timeline-control"><label htmlFor="snapshot">ACTUAL SNAPSHOTS</label><select id="snapshot" value={date} onChange={e => setDate(e.target.value)}>{manifest.snapshots.map(item => <option key={item.date} value={item.date}>{item.date}</option>)}</select></div><div className="segmented" role="group" aria-label="View"><button className={view === 'songs' ? 'on' : ''} onClick={() => setView('songs')}>Songs</button><button className={view === 'genres' ? 'on' : ''} onClick={() => setView('genres')}>Genres</button></div><div className="filter-control"><label htmlFor="genre">GENRE</label><select id="genre" value={genre} onChange={e => setGenre(e.target.value)}><option>All genres</option>{genres.map(g => <option key={g}>{g}</option>)}</select></div><div className="filter-control search-control"><label htmlFor="song-search">SONG / ARTIST</label><input id="song-search" type="search" placeholder="Find a song…" value={search} onChange={e => setSearch(e.target.value)} /></div><button className="pause-button" onClick={() => setPaused(x => !x)} aria-pressed={paused}>{paused ? '▶ Resume' : 'Ⅱ Pause'} motion</button></div>
-          <div className="mode-line"><span className="eyebrow">FLOW TYPE</span><Tag tone="accent">● Estimated · independence baseline</Tag><span className="disabled-mode" title="No authorized same-listener histories have been supplied">○ Observed unavailable — no consented cohort</span></div>
-          {view === 'songs' ? <><div className="map-grid"><Ranking title="Last week’s top 10" period={data.previous_week} rows={previous} side="previous" otherIds={currentIds} selected={selected} onSelect={setSelected} genres={genres} filterGenre={genre} search={search} /><Graph previous={previous} current={current} flows={data.flows} selected={selected} onSelect={setSelected} genres={genres} filterGenre={genre} search={search} paused={paused} /><Ranking title="This week’s top 15" period={data.current_week} rows={current} side="current" otherIds={priorIds} selected={selected} onSelect={setSelected} genres={genres} filterGenre={genre} search={search} /></div><div className="under-map"><Details selected={selected} previous={previous} current={current} flows={data.flows} genres={genres} onClose={() => setSelected(null)} /><div className="legend card"><span className="eyebrow">HOW TO READ THIS MAP</span><h2>Marks &amp; meaning</h2><div className="legend-list"><p><span className="legend-node">●</span><strong>Node area</strong> = recorded listens for that chart row.</p><p><span className="legend-line">⟶</span><strong>Line width</strong> = share of hypothetical visible-list pairings.</p><p><span className="legend-particle">✦</span><strong>Particle</strong> = direction cue only; quantity and speed encode nothing.</p><p><span className="legend-status">↺</span><strong>Stays / enters / leaves</strong> = visible-list membership.</p></div><div className="genre-legend">{genres.map(g => <span key={g}><span className="genre-swatch" style={{ background: genreColor(g, genres) }} />{g}</span>)}</div></div></div></> : <GenreMatrix previous={previous} current={current} flows={data.flows} genres={genres} filterGenre={genre} onGenre={setGenre} />}
-          {data.data_quality_notes.length > 0 && <div className="quality-banner"><strong>Data quality</strong><ul>{data.data_quality_notes.map(note => <li key={note}>{note}</li>)}</ul></div>}
+  const selectedArtist = data?.artists.find(a => a.id === selected)
+  const matches = data?.artists.filter(a => a.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())).slice(0, 8) || []
+  const clusterGroups = data ? Object.entries(Object.groupBy(data.artists.filter(a => a.cluster_id !== 'unlinked'), a => a.cluster_id))
+    .sort((a, b) => b[1].length - a[1].length).slice(0, 6) : []
+  const age = data ? (Date.now() - new Date(data.window.source_last_updated_utc).getTime()) / 3600000 : 0
+  const choose = id => { setSelected(id); setSearch(''); focusRef.current?.focus(id) }
+  return <div className="site">
+    <header className="topbar">
+      <a className="wordmark" href="#top" onClick={() => focusRef.current?.reset()}><span className="logo-mark">◉</span> MUSIC / MIGRATION MAP</a>
+      <span className="edition">THE ARTIST LANDSCAPE <b>01</b></span>
+      <div className="top-actions"><a href="https://github.com/lidonmiguel/music-listening-migration-map" target="_blank" rel="noreferrer">SOURCE ↗</a><button onClick={() => setHelp(x => !x)} aria-expanded={help}>ABOUT THE DATA <span>↗</span></button></div>
+    </header>
+    <main id="top" className="map-page">
+      <div className="map-intro"><span className="micro">LISTENBRAINZ · SITEWIDE SUBMISSIONS</span>
+        <h1>A map of what<br /><em>we listen to.</em></h1>
+        <p>100 identified artists. A landscape shaped by session affinity, sized by recorded listens. Explore who sits near whom.</p>
+      </div>
+      <div className="map-controls">
+        <div className="search-wrap"><label htmlFor="artist-search" className="sr-only">Find an artist</label>
+          <span className="search-icon">⌕</span><input id="artist-search" type="search" value={search}
+            onChange={e => setSearch(e.target.value)} placeholder="Find an artist" autoComplete="off" />
+          {search && <div className="search-results">{matches.length ? matches.map(a => <button key={a.id} onClick={() => choose(a.id)}>
+            <i style={{ background: color(a.cluster_id) }} />{a.name}<small>#{a.rank}</small></button>) : <p>No artist in this top 100</p>}</div>}</div>
+        <div className="zoom-buttons"><button onClick={() => focusRef.current?.reset()} aria-label="Reset map zoom">⌖</button>
+          <button onClick={() => focusRef.current?.focus(selected || data?.artists[0]?.id)} aria-label="Zoom to selected artist">＋</button></div>
+      </div>
+      {error ? <div className="error-state">Unable to load the recorded artist snapshot: {error}. No substitute data is shown.</div> :
+        !data ? <div className="loading-state"><span className="loading-ring" />Mapping the recorded landscape…</div> :
+        <>
+          <ArtistMap data={data} selected={selected} hovered={hovered} onSelect={setSelected}
+            onHover={setHovered} search={search} paused={paused} focusRef={focusRef} />
+          {selectedArtist && <ArtistDetail artist={selectedArtist} data={data} onClose={() => setSelected(null)} onNeighbor={choose} />}
+          <div className="map-side-note"><span className="note-line" />DRAG TO MOVE<br />SCROLL TO EXPLORE</div>
+          <div className="legend-inline"><span><i className="size-symbol" /> circle area = this-week listens</span>
+            <span><i className="link-symbol" /> line = session affinity</span>
+            <span>NO MOVEMENT PARTICLES · UNMEASURED</span></div>
+          <div className="map-footer">
+            <div className="date-control"><span className="micro">01 / RECORDED DATE</span>
+              <select aria-label="Recorded snapshot date" value={date} onChange={e => setDate(e.target.value)}>
+                {manifest.snapshots.map(item => <option key={item.date} value={item.date}>{item.date}</option>)}
+              </select>
+              <span className="date-count">{manifest.snapshots.length} actual snapshot{manifest.snapshots.length === 1 ? '' : 's'}</span>
+            </div>
+            <div className="source-window"><span className="micro">02 / SOURCE WINDOW</span><strong>{dateLabel(data.window.period_start_utc)}–{dateLabel(new Date(new Date(data.window.period_end_utc_calendar).getTime() - 86400000).toISOString())} UTC · {data.window.is_partial ? 'incomplete week' : 'complete week'}</strong>
+              <small>Last calculated {timeLabel(data.window.source_last_updated_utc)}{age > 36 ? ' · delayed upstream' : ''}</small></div>
+            <div className="mode-status"><span className="micro">03 / WHAT THE MAP SHOWS</span>
+              <div><span className="status-active">● MEASURED ACTIVITY</span><span className="status-affinity">◌ SESSION AFFINITY</span><span className="status-off">↗ MOVEMENT UNAVAILABLE</span></div></div>
+            <button className="motion-button" onClick={() => setPaused(x => !x)} aria-pressed={paused}>
+              {paused ? '▶' : 'Ⅱ'} <span>{paused ? 'RESUME' : 'PAUSE'} MOTION</span></button>
+          </div>
+          <div className="cluster-key"><span className="micro">AFFINITY COMMUNITIES</span>
+            {clusterGroups.map(([id, members]) => <span key={id}><i style={{ background: color(id) }} />
+              {members.slice().sort((a, b) => a.rank - b.rank)[0].name} <small>+{members.length - 1}</small></span>)}
+          </div>
+          <div className="source-disclosure">Sitewide top 100 among artists with MusicBrainz IDs; unmatched credits excluded ({data.quality.excluded_missing_mbid} of {data.quality.rows_examined} chart rows).
+            Affinity uses a separately updated session index, not this week's shared-listener counts. No observed listener migrations.</div>
         </>}
-      </section>
-      <section id="method" className="method"><div className="method-intro"><span className="eyebrow">THE METHOD</span><h2>What we know.<br /><em>What we model.</em></h2><p>The source gives aggregate listen counts, not links between people across weeks. Keeping that boundary visible is the point of the project.</p></div><div className="method-cards"><article><span className="method-index">01 / OBSERVED CHART</span><h3>Real rankings</h3><p>ListenBrainz supplies sitewide recording rows and listen counts for the two calendar weeks. Node size uses those counts. A play is not a unique listener.</p></article><article><span className="method-index">02 / ESTIMATED LINK</span><h3>Independent shares</h3><p>For each connection, multiply a song’s share of the previous visible top 10 by a song’s share of the current visible top 15. The result is a modeled percentage, never a number of people.</p></article><article><span className="method-index">03 / FUTURE COHORT</span><h3>Observed movement</h3><p>Only consented, same-user histories could count weekly favorite changes. There is no such cohort in this prototype. This view will stay unavailable until one exists and privacy thresholds are met.</p></article></div><div className="method-footer"><a href="https://github.com/lidonmiguel/music-listening-migration-map/blob/main/docs/methods.md">Read the full data dictionary ↗</a><span>Source: <a href="https://listenbrainz.org/statistics/">ListenBrainz</a> · Genres: MusicBrainz tags</span></div></section>
-    </main><footer><span>♫ MUSIC LISTENING MIGRATION MAP</span><span>Public aggregates · estimated flow · UTC weeks</span><a href="#top">Back to top ↑</a></footer>
+    </main>
+    {help && <div className="help-scrim" onClick={() => setHelp(false)}><section className="help-sheet" onClick={e => e.stopPropagation()} aria-label="Map data explanation">
+      <button className="icon-button" onClick={() => setHelp(false)} aria-label="Close explanation">×</button>
+      <span className="micro">HOW TO READ THE LANDSCAPE</span><h2>Three different things.</h2>
+      <p><b>Measured activity.</b> Circle area follows the artist's recorded ListenBrainz listens in the current UTC week. On a new source calculation, circles change size. A daily collection with unchanged source data adds no new date.</p>
+      <p><b>Session affinity.</b> Lines are undirected normalized scores from ListenBrainz's separate similar-artist session index. Communities use Louvain detection on that graph. Lines are not exact shared audiences this week.</p>
+      <p><b>Listener movement.</b> Unavailable. Counting switches requires the same consented users' chronological histories across defined periods. This site has no such dataset and shows no migrating-user particles.</p>
+      <p>Weekday artist rows are supplied for a subset of popular artists only. Counts are listens, not distinct listeners; the index's observation horizon does not match the chart week.</p>
+      <a href="https://github.com/lidonmiguel/music-listening-migration-map/blob/main/docs/methods.md" target="_blank" rel="noreferrer">FULL METHOD & DATA DICTIONARY ↗</a>
+    </section></div>}
   </div>
 }
