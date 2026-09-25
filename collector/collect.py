@@ -22,6 +22,7 @@ API = "https://api.listenbrainz.org/1"
 LABS = "https://labs.api.listenbrainz.org/similar-artists/json"
 ALGORITHM = "session_based_days_7500_session_300_contribution_5_threshold_10_limit_100_filter_True_skip_30"
 LAYOUT_VERSION = "community_neighborhood_v2"
+SNAPSHOT_RULE_VERSION = "prior_calendar_date_v2"
 AGENT = "MusicListeningMigrationMap/0.2 (https://github.com/lidonmiguel/music-listening-migration-map)"
 UTC = timezone.utc
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -275,7 +276,10 @@ def build_snapshot(chart: dict, activity: dict | None, affinity: list[dict], tod
     graph.add_weighted_edges_from((edge["source"], edge["target"], edge["strength"]) for edge in edges)
     labels = communities(graph, previous)
     positions = layout(graph, artists, previous, labels)
-    earlier = {a["id"]: a for a in (previous or {}).get("artists", [])} if previous and previous.get("window", {}).get("period_start_utc") == window["period_start_utc"] else {}
+    earlier = {a["id"]: a for a in previous["artists"]} if (
+        previous and previous.get("snapshot_date", "") < today.isoformat()
+        and previous.get("window", {}).get("period_start_utc") == window["period_start_utc"]
+    ) else {}
     for artist in artists:
         prior = earlier.get(artist["id"])
         artist["change_since_previous_snapshot"] = artist["listen_count"] - prior["listen_count"] if prior else None
@@ -284,7 +288,8 @@ def build_snapshot(chart: dict, activity: dict | None, affinity: list[dict], tod
         artist["x"], artist["y"] = positions[artist["id"]]
         artist["distinct_listener_count"] = None
     signature = hashlib.sha256(json.dumps({
-        "layout": LAYOUT_VERSION, "week": window["period_start_utc"],
+        "layout": LAYOUT_VERSION, "rules": SNAPSHOT_RULE_VERSION,
+        "week": window["period_start_utc"],
         "artists": [(a["id"], a["listen_count"], a["reported_daily_activity"]) for a in artists],
         "affinity": [(e["source"], e["target"], e["session_score"]) for e in edges],
     }, sort_keys=True).encode()).hexdigest()

@@ -57,7 +57,13 @@ class ArtistRules(unittest.TestCase):
         self.assertEqual(len(first["artists"]), 100)
         self.assertEqual([(a["x"], a["y"]) for a in first["artists"]],
                          [(a["x"], a["y"]) for a in second["artists"]])
-        self.assertEqual(second["artists"][0]["change_since_previous_snapshot"], 0)
+        self.assertIsNone(second["artists"][0]["change_since_previous_snapshot"])
+        self.assertIsNone(second["artists"][0]["previous_snapshot_date"])
+        next_day = date(2026, 9, 26)
+        next_now = datetime(2026, 9, 26, 11, tzinfo=timezone.utc)
+        third, _ = build_snapshot(self.chart, None, rows, next_day, next_now, first)
+        self.assertEqual(third["artists"][0]["change_since_previous_snapshot"], 0)
+        self.assertEqual(third["artists"][0]["previous_snapshot_date"], self.today.isoformat())
 
     def test_inconsistent_weekday_rows_are_suppressed(self):
         artists, _ = ranked_artists(self.chart["artists"])
