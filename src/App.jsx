@@ -43,7 +43,8 @@ function Graph({ previous, current, flows, selected, onSelect, genres, filterGen
   const targetById = useMemo(() => new Map(current.map(x => [x.track_id, x])), [current])
   const yLeft = index => 67 + index * 62
   const yRight = index => 45 + index * 44
-  const radius = scaleSqrt().domain([0, Math.max(1, ...[...previous, ...current].map(row => row.play_count))]).range([3.5, 12])
+  // With a zero-based square-root scale, circle area is proportional to listens.
+  const radius = scaleSqrt().domain([0, Math.max(1, ...[...previous, ...current].map(row => row.play_count))]).range([0, 14])
   const matches = row => (filterGenre === 'All genres' || row.genre === filterGenre) && (!search || `${row.title} ${row.artist}`.toLowerCase().includes(search.toLowerCase()))
   const activeFlows = selected
     ? flows.filter(flow => selected.side === 'previous' ? flow.source_node === selected.id : flow.destination_node === selected.id)
@@ -62,10 +63,10 @@ function Graph({ previous, current, flows, selected, onSelect, genres, filterGen
       {edges.map(edge => <path key={`${edge.source_node}|${edge.destination_node}`} id={`edge-${edge.index}`} d={edge.path} fill="none" stroke={genreColor(edge.a.genre, genres)} strokeWidth={Math.max(1, Math.sqrt(edge.estimated_share) * 31)} opacity={edge.visible ? selected ? .63 : .23 : .025} markerEnd="url(#arrow)"><title>{edge.a.title} → {edge.b.title}: {percent(edge.estimated_share)} modeled pairing share. No listener count.</title></path>)}
       {!paused && edges.filter(e => e.visible).sort((a,b) => b.estimated_share - a.estimated_share).slice(0, 8).map(edge => <circle key={`particle-${edge.index}`} r="2.4" fill={genreColor(edge.a.genre, genres)} aria-hidden="true"><animateMotion dur={`${4.2 + edge.index % 3 * 0.8}s`} begin={`${edge.index % 8 * -.51}s`} repeatCount="indefinite" path={edge.path} /></circle>)}
       {previous.map(row => <g key={`left-${row.track_id}`} className="node" onClick={() => onSelect({ side: 'previous', id: row.track_id })} style={{ cursor: 'pointer' }} tabIndex="0" role="button" aria-label={`Previous rank ${row.ranking}, ${row.title}, ${number.format(row.play_count)} listens`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect({ side: 'previous', id: row.track_id }) } }}>
-        <circle cx="19" cy={yLeft(row.ranking - 1)} r={radius(row.play_count) + (selected?.id === row.track_id ? 3 : 0)} fill={genreColor(row.genre, genres)} opacity={matches(row) ? 1 : .2} stroke="#101625" strokeWidth="2" /><title>{row.title} · {number.format(row.play_count)} listens</title>
+        <circle cx="19" cy={yLeft(row.ranking - 1)} r={radius(row.play_count)} fill={genreColor(row.genre, genres)} opacity={matches(row) ? 1 : .2} stroke={selected?.id === row.track_id ? '#ffffff' : '#101625'} strokeWidth="2" /><title>{row.title} · {number.format(row.play_count)} listens</title>
       </g>)}
       {current.map(row => <g key={`right-${row.track_id}`} className="node" onClick={() => onSelect({ side: 'current', id: row.track_id })} style={{ cursor: 'pointer' }} tabIndex="0" role="button" aria-label={`Current rank ${row.ranking}, ${row.title}, ${number.format(row.play_count)} listens`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect({ side: 'current', id: row.track_id }) } }}>
-        <circle cx="461" cy={yRight(row.ranking - 1)} r={radius(row.play_count) + (selected?.id === row.track_id ? 3 : 0)} fill={genreColor(row.genre, genres)} opacity={matches(row) ? 1 : .2} stroke="#101625" strokeWidth="2" /><title>{row.title} · {number.format(row.play_count)} listens</title>
+        <circle cx="461" cy={yRight(row.ranking - 1)} r={radius(row.play_count)} fill={genreColor(row.genre, genres)} opacity={matches(row) ? 1 : .2} stroke={selected?.id === row.track_id ? '#ffffff' : '#101625'} strokeWidth="2" /><title>{row.title} · {number.format(row.play_count)} listens</title>
       </g>)}
       <text x="20" y="730" fill="#8794ad" fontSize="11">PREVIOUS</text><text x="410" y="730" fill="#8794ad" fontSize="11">CURRENT →</text>
     </svg>
