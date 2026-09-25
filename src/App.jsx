@@ -180,8 +180,8 @@ function ArtistDetail({ id, data, weeks, cache, series, onClose, onFollow, playi
     const prior = before?.artists.some(item => item.id === id)
     let event = ''
     if (before && snap && weeks[index - 1]?.status !== 'missing') {
-      if (a && !prior) event = 'Entered visible 100'
-      if (!a && prior) event = 'Left visible 100'
+      if (a && !prior) event = snap.status === 'partial' ? 'New in partial top 100 so far' : 'Entered visible 100'
+      if (!a && prior) event = snap.status === 'partial' ? 'Outside partial top 100 so far' : 'Left visible 100'
     }
     const neighbors = snap && a ? graphEdges(snap).filter(edge => edge.source === id || edge.target === id)
       .sort((x, y) => y.strength - x.strength).slice(0, 2)
