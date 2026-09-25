@@ -116,6 +116,9 @@ def collect(now: datetime | None = None) -> list[str]:
     manifest_path = DATA / "weekly" / "manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest = load_manifest(manifest_path, monday.isocalendar().year)
+    for _, start, _ in payloads:
+        iso_year = start.isocalendar().year
+        manifest["years"].setdefault(str(iso_year), {"weeks": weeks_of_iso_year(iso_year)})
     changed = []
     previous = None
     for rng, start, payload in payloads:

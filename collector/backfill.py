@@ -130,6 +130,7 @@ def scan_archive(archive: Path, conn: sqlite3.Connection, year: int,
         if process.wait() != 0:
             raise ValueError("Decompression of full dump failed")
     finally:
+        process.stdout.close()
         if process.poll() is None:
             process.kill()
             process.wait()

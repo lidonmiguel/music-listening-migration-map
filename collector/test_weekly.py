@@ -1,11 +1,15 @@
 import json
+import io
+import shutil
 import sqlite3
+import subprocess
+import tarfile
 import tempfile
 import unittest
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from backfill import audience_edges, mbids_for_listen, prepare_db, publish_year
+from backfill import audience_edges, mbids_for_listen, prepare_db, publish_year, scan_archive
 from validate_weekly import validate_manifest
 from weekly import snapshot_from_api, source_week, weeks_of_iso_year
 
@@ -65,6 +69,29 @@ class WeeklyRules(unittest.TestCase):
                 snapshot = json.loads((Path(directory) / "weekly-dump" / "2026-W01.json").read_text())
                 self.assertEqual(snapshot["weekly_relationship_status"], "measured_weighted_jaccard")
                 self.assertEqual(snapshot["movement"]["observed_transitions"], [])
+
+    @unittest.skipUnless(shutil.which("zstd"), "zstd needed for archive stream test")
+    def test_full_dump_stream_reads_real_week_without_publishing_users(self):
+        with tempfile.TemporaryDirectory() as directory:
+            raw = Path(directory) / "source.tar"
+            compressed = Path(directory) / "source.tar.zst"
+            listen = {"listened_at": 1767052800, "user_name": "private-listener",
+                      "track_metadata": {"artist_name": "Observed artist",
+                                         "additional_info": {"artist_mbids": [mbid(1)]}}}
+            with tarfile.open(raw, "w") as archive:
+                for name, contents in (("dump/listens/2025/12.listens", json.dumps(listen) + "\n"),
+                                       ("dump/listens/2026/1.listens", "")):
+                    encoded = contents.encode()
+                    info = tarfile.TarInfo(name)
+                    info.size = len(encoded)
+                    archive.addfile(info, io.BytesIO(encoded))
+            subprocess.run(["zstd", "-q", str(raw), "-o", str(compressed)], check=True)
+            with sqlite3.connect(":memory:") as db:
+                prepare_db(db)
+                months = scan_archive(compressed, db, 2026, {"2026-W01"})
+                self.assertEqual(months, {(2025, 12), (2026, 1)})
+                self.assertEqual(db.execute("SELECT listens FROM totals").fetchone(), (1,))
+                self.assertNotIn("private-listener", str(db.execute("SELECT * FROM audience").fetchall()))
 
 
 if __name__ == "__main__":

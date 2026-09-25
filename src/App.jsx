@@ -140,7 +140,9 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
           className="map-connection" stroke={active ? color(data?.artists.find(x => x.id === (selected || edge.source))?.cluster_id) : '#93aeb8'}
           strokeWidth={(active ? 1.5 : .75) + edge.strength * (active ? 3 : 1.9)}
           opacity={edge.opacity * (active ? .9 : emphasis ? .13 : .32)}
-          onClick={event => { event.stopPropagation(); onEdge(edge); onSelect(null) }}
+          onClick={event => { event.stopPropagation(); onEdge(edge) }}
+          onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onEdge(edge) } }}
+          role="button" tabIndex="0"
           aria-label={`Inspect ${data?.artists.find(x => x.id === edge.source)?.name || 'artist'} and ${data?.artists.find(x => x.id === edge.target)?.name || 'artist'} connection`} />
       })}
       {scene.artists.map(a => {
@@ -151,10 +153,10 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
         return <g key={a.id} className={`artist-node ${dim ? 'muted' : ''}`}
           transform={`translate(${a.px},${a.py})`} opacity={a.opacity}
           role="button" tabIndex="0" aria-label={`${a.name}, rank ${a.rank}, ${number.format(a.listen_count)} listens`}
-          onClick={event => { event.stopPropagation(); onSelect(a.id); onEdge(null) }}
+          onClick={event => { event.stopPropagation(); onSelect(a.id) }}
           onMouseEnter={() => setHovered(a.id)} onMouseLeave={() => setHovered(null)}
           onFocus={() => setHovered(a.id)} onBlur={() => setHovered(null)}
-          onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(a.id); onEdge(null) } }}>
+          onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(a.id) } }}>
           <circle className="node-hit" r={Math.max(17, a.r + 5)} fill="transparent" />
           {(active || hovered === a.id) && <circle r={a.r + 7} fill="none" stroke={a.fill} strokeWidth="1.4" />}
           <circle r={a.r} fill={a.fill} opacity={dim ? .25 : .88} stroke={active ? '#fff0df' : '#d8e2e5'} strokeWidth={active ? 2 : .55} />
