@@ -2,12 +2,12 @@
 
 [Live weekly artist map](https://lidonmiguel.github.io/music-listening-migration-map/)
 
-An explorable 100-artist landscape built from **recorded ListenBrainz listens**, with a real ISO-week timeline. Press Play on an observed week to move to the next adjacent observed week. Missing weeks remain gaps. Node movement and size animation are a visual transition between measurements; they are **not** migrating listeners.
+An explorable 100-artist landscape built from **recorded ListenBrainz listens**, with a real ISO-week timeline. Play moves only between adjacent **completed** weeks. The unfinished current week is a separate Live preview, so its shorter raw count is never animated as a loss against seven days. Missing weeks remain gaps. Node movement and size animation are a visual transition between measurements; they are **not** migrating listeners.
 
 ## What is available now
 
 - **2026-W38**, September 14–20 UTC: completed top-100 sitewide artist chart.
-- **2026-W39**, September 21–27 UTC: incomplete current-week top-100 chart, last calculated September 23. It cannot be compared like for like with the complete prior week.
+- **2026-W39**, September 21–27 UTC: incomplete Live preview, last calculated September 23. It cannot be compared like for like with the complete prior week. Play is disabled with only W38 complete.
 - **2026-W01 through W37:** missing. No historic rankings have been copied or estimated. W40–W53 are future weeks as of the first publication.
 - Lines in these API snapshots are a **nonweekly session-affinity reference** from ListenBrainz Labs. They are not weekly shared-listener counts. No observed listener movement, arrows or directional particles are published.
 
@@ -30,6 +30,6 @@ The scheduled GitHub Actions job runs at 06:17 UTC daily, fetches only the curre
 
 ## Historical full-dump backfill
 
-An **offline batch** processor exists at `collector/backfill.py`. It streams an official full listens `.tar.zst`, verifies its supplied SHA-256, uses private temporary hashed user keys for weekly aggregation, and writes an isolated `public/data/weekly-dump/` series. It must run on a capable private machine with `zstd`, substantial scratch storage and enough time to read an archive currently measured in hundreds of gigabytes. This machine, archive and official checksum are not available to the normal Pages workflow. See [instructions and limitations](docs/weekly-methods.md#offline-historical-backfill). Do not commit raw archives, extracted listening events, usernames or temporary SQLite files.
+An **offline batch** processor exists at `collector/backfill.py`. It streams an official full listens `.tar.zst`, verifies its supplied SHA-256, uses private temporary hashed user keys for weekly aggregation, and writes an isolated `public/data/weekly-dump/` series. The September 15, 2026 archive is listed at **229 GB compressed**, while this workspace has about **29 GB free**; the archive is not accessible for direct download in this environment. No full-dump backfill ran here. Use `python collector/backfill.py --preflight --expected-archive-bytes <official-size>` to check a batch machine before download, then read the [instructions and limitations](docs/weekly-methods.md#offline-historical-backfill). Do not commit raw archives, extracted listening events, usernames or temporary SQLite files.
 
 The live API series and a dump-derived historical series use separate selectors because their identity coverage and counting methods can differ. The frontend reads the dump manifest only if the batch result has been validated and deliberately published. Neither series is silently spliced into the other.

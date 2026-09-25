@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { interpolateRgb, select, zoom, zoomIdentity } from 'd3'
+import { interpolateRgb, select, zoom, zoomIdentity, zoomTransform } from 'd3'
 
 const BASE = import.meta.env.BASE_URL
 const WIDTH = 1400
@@ -11,6 +11,11 @@ const color = id => id === 'unlinked' ? '#94a2ad' : COLORS[(Number(id?.slice(1))
 const radius = count => 5 + 27 * Math.sqrt(count / (count + 25000)) // fixed saturating scale; area is not proportional
 const weekLabel = week => `${week.id.slice(-3)} · ${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(week.start + 'T00:00:00Z'))}–${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(week.end_exclusive + 'T00:00:00Z').getTime() - 86400000)}`
 const readableTime = value => value ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).format(new Date(value)) + ' UTC' : 'unknown'
+const freshness = value => {
+  if (!value) return 'Source calculation time unavailable'
+  const age = Math.max(0, (Date.now() - new Date(value).getTime()) / 3600000)
+  return age < 24 ? 'Source calculated within the last day' : `Source last calculated ${Math.floor(age / 24)} day${Math.floor(age / 24) === 1 ? '' : 's'} ago; newer listens may be missing`
+}
 const graphEdges = data => data?.weekly_relationship_status === 'measured_weighted_jaccard' ? data.weekly_edges : (data?.reference_edges || [])
 const graphMode = data => data?.weekly_relationship_status === 'measured_weighted_jaccard' ? 'Weekly shared audience · weighted Jaccard' : data?.reference_edges?.length ? 'Session affinity reference · not weekly overlap' : 'Audience relationships unavailable'
 const edgeKey = edge => `${edge.source}:${edge.target}`
@@ -27,10 +32,13 @@ function useScene(data, reduced) {
     const target = {
       artists: data.artists.map(a => ({ ...a, px: 30 + a.x * (WIDTH - 60), py: 18 + a.y * (HEIGHT - 36),
         r: radius(a.listen_count), opacity: 1, fill: color(a.cluster_id) })),
-      edges: graphEdges(data).map(e => ({ ...e, opacity: 1 }))
+      edges: graphEdges(data).map(e => ({ ...e, opacity: 1 })),
+      week_id: data.week_id, status: data.status, end_exclusive: data.end_exclusive
     }
     const start = previous.current
-    if (reduced || !start) {
+    const adjacentCompleted = start?.status === 'complete' && target.status === 'complete' &&
+      Math.abs(new Date(target.end_exclusive) - new Date(start.end_exclusive)) === 7 * 86400000
+    if (reduced || !adjacentCompleted) {
       previous.current = target
       setScene(target)
       return
@@ -79,7 +87,7 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
   const nodes = useMemo(() => new Map(scene.artists.map(a => [a.id, a])), [scene.artists])
   const currentEdges = graphEdges(data)
   const neighborEdges = selected ? currentEdges.filter(e => e.source === selected || e.target === selected)
-    .sort((a, b) => b.strength - a.strength).slice(0, 9) : []
+    .sort((a, b) => b.strength - a.strength).slice(0, 5) : []
   const neighbors = new Set(neighborEdges.map(e => e.source === selected ? e.target : e.source))
   const meaningful = scene.edges.filter(edge => {
     if (selected) return neighborEdges.some(e => edgeKey(e) === edgeKey(edge))
@@ -105,12 +113,22 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
   }, [])
   useEffect(() => {
     focusRef.current = {
+      reveal: id => {
+        const a = nodes.get(id), element = svg.current
+        if (!a || !element) return
+        const current = zoomTransform(element)
+        const x = a.px * current.k + current.x, y = a.py * current.k + current.y
+        const dx = x > WIDTH * .67 ? WIDTH * .67 - x : 0
+        const dy = window.innerWidth <= 700 && y > HEIGHT * .52 ? HEIGHT * .52 - y : 0
+        if (dx || dy) select(element).call(behavior.current.transform,
+          zoomIdentity.translate(current.x + dx, current.y + dy).scale(current.k))
+      },
       focus: id => {
         const a = nodes.get(id)
         if (!a) return
-        const scale = 1.65
+        const scale = 1.18
         select(svg.current).call(behavior.current.transform,
-          zoomIdentity.translate(WIDTH * .51 - a.px * scale, HEIGHT * .48 - a.py * scale).scale(scale))
+          zoomIdentity.translate(WIDTH * .46 - a.px * scale, HEIGHT * .43 - a.py * scale).scale(scale))
       },
       reset: () => select(svg.current).call(behavior.current.transform, zoomIdentity)
     }
@@ -139,7 +157,7 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
         return <line key={edgeKey(edge)} x1={a.px} y1={a.py} x2={b.px} y2={b.py}
           className="map-connection" stroke={active ? color(data?.artists.find(x => x.id === (selected || edge.source))?.cluster_id) : '#93aeb8'}
           strokeWidth={(active ? 1.5 : .75) + edge.strength * (active ? 3 : 1.9)}
-          opacity={edge.opacity * (active ? .9 : emphasis ? .13 : .32)}
+          opacity={edge.opacity * (active ? .9 : emphasis ? .24 : .32)}
           onClick={event => { event.stopPropagation(); onEdge(edge) }}
           onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onEdge(edge) } }}
           role="button" tabIndex="0"
@@ -149,7 +167,7 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
         if (a.opacity <= .005) return null
         const active = selected === a.id
         const dim = (selected && !active && !neighbors.has(a.id)) || (search && !a.name.toLowerCase().includes(search.toLowerCase()) && !active)
-        const label = active || hovered === a.id || (a.rank <= 10 && !selected) || (search && a.name.toLowerCase().includes(search.toLowerCase()))
+        const label = active || neighbors.has(a.id) || hovered === a.id || (a.rank <= 10 && !selected) || (search && a.name.toLowerCase().includes(search.toLowerCase()))
         return <g key={a.id} className={`artist-node ${dim ? 'muted' : ''}`}
           transform={`translate(${a.px},${a.py})`} opacity={a.opacity}
           role="button" tabIndex="0" aria-label={`${a.name}, rank ${a.rank}, ${number.format(a.listen_count)} listens`}
@@ -159,7 +177,7 @@ function ArtistMap({ data, scene, selected, selectedEdge, search, onSelect, onEd
           onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(a.id) } }}>
           <circle className="node-hit" r={Math.max(17, a.r + 5)} fill="transparent" />
           {(active || hovered === a.id) && <circle r={a.r + 7} fill="none" stroke={a.fill} strokeWidth="1.4" />}
-          <circle r={a.r} fill={a.fill} opacity={dim ? .25 : .88} stroke={active ? '#fff0df' : '#d8e2e5'} strokeWidth={active ? 2 : .55} />
+          <circle r={a.r} fill={a.fill} opacity={dim ? .65 : .88} stroke={active ? '#fff0df' : '#d8e2e5'} strokeWidth={active ? 2 : .55} />
           {label && <text className="node-label" x={a.r + 7} y="4">{a.name.length > 22 ? a.name.slice(0, 21) + '…' : a.name}</text>}
           <title>{a.name} · {number.format(a.listen_count)} listens · {a.cluster_id}</title>
         </g>
@@ -179,15 +197,21 @@ function ArtistDetail({ id, data, weeks, cache, series, onClose, onFollow, playi
     const before = cache[`${series}:${weeks[index - 1]?.id}`]
     const prior = before?.artists.some(item => item.id === id)
     let event = ''
-    if (before && snap && weeks[index - 1]?.status !== 'missing') {
-      if (a && !prior) event = snap.status === 'partial' ? 'New in partial top 100 so far' : 'Entered visible 100'
-      if (!a && prior) event = snap.status === 'partial' ? 'Outside partial top 100 so far' : 'Left visible 100'
+    if (before?.status === 'complete' && snap?.status === 'complete') {
+      if (a && !prior) event = 'Entered visible 100'
+      if (!a && prior) event = 'Left visible 100'
     }
     const neighbors = snap && a ? graphEdges(snap).filter(edge => edge.source === id || edge.target === id)
       .sort((x, y) => y.strength - x.strength).slice(0, 2)
       .map(edge => snap.artists.find(other => other.id === (edge.source === id ? edge.target : edge.source))?.name).filter(Boolean) : []
     return { week, snap, a, event, neighbors }
   }).filter(row => row.week.status !== 'missing' && row.snap)
+  const completedHistory = history.filter(row => row.week.status === 'complete')
+  const preview = history.find(row => row.week.status === 'partial')
+  const currentNeighbors = current ? graphEdges(data).filter(edge => edge.source === id || edge.target === id)
+    .sort((x, y) => y.strength - x.strength).slice(0, 5)
+    .map(edge => ({ name: data.artists.find(other => other.id === (edge.source === id ? edge.target : edge.source))?.name,
+      strength: edge.strength })).filter(edge => edge.name) : []
   return <aside className="detail-panel" aria-label="Selected artist details">
     <div className="detail-head"><span className="micro">ARTIST / {current ? `#${current.rank}` : 'OUTSIDE TOP 100'}</span>
       <button className="icon-button" aria-label="Close artist details" onClick={onClose}>×</button></div>
@@ -197,17 +221,21 @@ function ArtistDetail({ id, data, weeks, cache, series, onClose, onFollow, playi
     <div className="detail-stats"><div><small>THIS WEEK’S RECORDED LISTENS</small><strong>{current ? number.format(current.listen_count) : '—'}</strong></div>
       <div><small>WEEKLY RANK</small><strong>{current ? `#${current.rank}` : '—'}</strong></div></div>
     <p className="detail-explain">{current ? `${data.status === 'partial' ? 'Incomplete week. ' : ''}Exact count from the stated source; circle size uses a fixed saturating scale.` : 'Outside the published top 100 is not zero listens.'}</p>
-    <button className="follow-button" onClick={onFollow}>{playing ? 'Ⅱ Pause artist journey' : '▶ Follow through available weeks'}</button>
-    <div className="detail-section"><div className="detail-section-title">RECORDED WEEK PATH <small>{history.length} loaded week{history.length === 1 ? '' : 's'}</small></div>
-      <div className="history-list">{history.map(row => <div key={row.week.id} className="history-row">
-        <span>{row.week.id.slice(-3)}{row.week.status === 'partial' ? ' · partial' : ''}</span>
+    {currentNeighbors.length > 0 && <div className="detail-section"><div className="detail-section-title">CLOSEST {data.weekly_relationship_status === 'measured_weighted_jaccard' ? 'WEEKLY AUDIENCES' : 'REFERENCE AFFINITIES'}</div>
+      <div className="neighbor-list">{currentNeighbors.map(edge => <span key={edge.name}>{edge.name} <small>{Math.round(edge.strength * 100)} / 100</small></span>)}</div>
+      <p className="detail-explain">{data.weekly_relationship_status === 'measured_weighted_jaccard' ? 'Same-week shared audience, not listener migration.' : 'Nonweekly session affinity, not measured listener migration.'}</p></div>}
+    <button className="follow-button" disabled={!playing && !weeks.some((w, n) => n > weeks.findIndex(x => x.id === data?.week_id) && w.status === 'complete' && weeks[n - 1]?.status === 'complete')}
+      onClick={onFollow}>{playing ? 'Ⅱ Pause artist journey' : '▶ Follow completed weeks'}</button>
+    <div className="detail-section"><div className="detail-section-title">COMPLETED WEEK HISTORY <small>{completedHistory.length} loaded</small></div>
+      <div className="history-list">{completedHistory.map(row => <div key={row.week.id} className="history-row">
+        <span>{row.week.id.slice(-3)}</span>
         <strong>{row.a ? number.format(row.a.listen_count) : 'Outside 100'}</strong>
         {row.event && <small>{row.event}</small>}
         {row.neighbors.length > 0 && <small>{row.snap.weekly_relationship_status === 'measured_weighted_jaccard' ? 'Weekly audience: ' : 'Reference affinity: '}{row.neighbors.join(' · ')}</small>}
       </div>)}</div>
     </div>
-    <p className="detail-explain">Entry and exit labels appear only across adjacent observed weeks. Missing weeks cannot establish when a change happened.</p>
-    <div className="movement-empty">No tracked listener migration. Position changes show a layout transition, not a person’s journey.</div>
+    {preview && <div className="preview-history"><span>LIVE PREVIEW · {preview.week.id.slice(-3)}</span><strong>{preview.a ? number.format(preview.a.listen_count) : 'Outside 100'}</strong><small>Incomplete; excluded from completed-week playback and change calculations.</small></div>}
+    <p className="detail-explain">Entry and exit labels require adjacent completed observations. Outside the top 100 does not mean zero listens.</p>
     <p className="detail-source">MusicBrainz artist ID · {id}</p>
   </aside>
 }
@@ -258,7 +286,7 @@ export default function App() {
         setManifests({ live, ...(dump?.schema_version === 3 ? { dump } : {}) })
         setYear(live.default_year)
         const slots = live.years[String(live.default_year)]?.weeks || []
-        setIndex(Math.max(0, slots.findIndex(w => w.status !== 'missing')))
+        setIndex(Math.max(0, slots.findIndex(w => w.status === 'complete')))
       } catch (cause) { setError(cause.message) }
     }
     start()
@@ -315,15 +343,21 @@ export default function App() {
   useEffect(() => {
     if (!playing) return
     const next = weeks[index + 1]
-    if (!next || next.status === 'missing') { setPlaying(false); return }
-    const timer = window.setTimeout(() => { setIndex(index + 1); if (index + 2 >= weeks.length || weeks[index + 2].status === 'missing') setPlaying(false) }, speed * 1000)
+    if (weeks[index]?.status !== 'complete' || next?.status !== 'complete') { setPlaying(false); return }
+    const timer = window.setTimeout(() => { setIndex(index + 1); if (weeks[index + 2]?.status !== 'complete') setPlaying(false) }, speed * 1000)
     return () => window.clearTimeout(timer)
   }, [playing, index, weeks, speed])
 
   const chooseWeek = value => { setPlaying(false); setSelectedEdge(null); setIndex(Math.max(0, Math.min(weeks.length - 1, value))) }
-  const chooseArtist = id => { setPlaying(false); setSelected(id); setSelectedEdge(null); setSearch(''); focusRef.current?.focus(id) }
+  const chooseArtist = id => { setPlaying(false); setSelected(id); setSelectedEdge(null); setSearch(''); if (id) focusRef.current?.reveal(id); else focusRef.current?.reset() }
   const chooseEdge = edge => { setPlaying(false); setSelectedEdge(edge); setSelected(null) }
   const available = weeks.filter(item => item.status !== 'missing')
+  const completed = weeks.map((item, n) => ({ ...item, index: n })).filter(item => item.status === 'complete')
+  const preview = weeks.findIndex(item => item.status === 'partial')
+  const completedPosition = completed.findIndex(item => item.index === index)
+  const canPlay = week?.status === 'complete' && weeks[index + 1]?.status === 'complete'
+  const previousCompleted = completed.filter(item => item.index < index).at(-1)
+  const nextCompleted = completed.find(item => item.index > index)
   const knownArtists = data?.artists || available.flatMap(item => cache[`${series}:${item.id}`]?.artists || [])
   const results = [...new Map(knownArtists.filter(a => a.name.toLowerCase().includes(search.toLowerCase())).map(a => [a.id, a])).values()].slice(0, 8)
   const isFuture = week && new Date(week.start + 'T00:00:00Z') > new Date()
@@ -348,39 +382,44 @@ export default function App() {
         {week?.status === 'missing' && <div className="gap-state"><span className="micro">NO OBSERVED SNAPSHOT</span>
           <h2>{isFuture ? 'This week has not happened yet.' : 'This week is missing.'}</h2>
           <p>No ranking or audience graph has been invented for {week.id}.</p>
-          <button onClick={() => chooseWeek(weeks.findIndex(w => w.status !== 'missing'))}>Jump to first recorded week</button></div>}
+          <button onClick={() => chooseWeek(completed[0]?.index ?? preview)}>Jump to recorded week</button></div>}
         {week?.status !== 'missing' && !data && <div className="loading-state">Loading {week?.id}…</div>}
         {selected && <ArtistDetail id={selected} data={data} weeks={weeks} cache={cache} series={series}
-          playing={playing} onClose={() => setSelected(null)} onFollow={() => setPlaying(value => !value)} />}
+          playing={playing} onClose={() => chooseArtist(null)} onFollow={() => { if (canPlay || playing) setPlaying(value => !value) }} />}
         {selectedEdge && data && <ConnectionDetail edge={selectedEdge} data={data} onClose={() => setSelectedEdge(null)} />}
         <div className="legend-inline"><span><i className="size-symbol" /> circle = recorded listens · saturating scale</span>
           <span><i className="link-symbol" /> {graphMode(data)}</span><span>NO LISTENER-MOVEMENT PARTICLES</span></div>
-        <div className="timeline"><div className="timeline-head"><div><span className="micro">ISO WEEK {week?.id?.slice(-2)} / {year}</span>
-            <h2>{week ? weekLabel(week) : 'No week'} <small>UTC · {week?.status === 'partial' ? 'INCOMPLETE' : week?.status === 'complete' ? 'COMPLETE' : 'MISSING'}</small></h2></div>
-            <div className="timeline-source">{data ? <><strong>{data.source.population}</strong><small>{data.source.last_calculated_utc ? `Calculated ${readableTime(data.source.last_calculated_utc)}` : `Archive ${data.source.archive_id}`} · {graphMode(data)}</small></> : <span>Only genuine weeks appear as observations.</span>}</div></div>
-          <div className="timeline-row"><div className="transport"><button aria-label="Previous week" disabled={index <= 0} onClick={() => chooseWeek(index - 1)}>‹</button>
+        <div className="timeline"><div className="timeline-head"><div><span className="micro">{week?.status === 'partial' ? 'LIVE PREVIEW' : 'COMPLETED WEEK'} · {year}</span>
+            <h2>{week ? weekLabel(week) : 'No week'} <small>UTC · {week?.status === 'partial' ? 'WEEK IN PROGRESS' : week?.status === 'complete' ? 'COMPLETE' : 'MISSING'}</small></h2></div>
+            <div className="timeline-source">{data ? <><strong>{data.source.population}</strong><small>{data.source.last_calculated_utc ? `Source calculated ${readableTime(data.source.last_calculated_utc)} · ${freshness(data.source.last_calculated_utc)}` : `Archive captured ${data.source.archive_captured_date}; historical batch, not a live update`}</small></> : <span>Only genuine weeks appear as observations.</span>}</div></div>
+          <div className="timeline-row"><div className="transport"><button aria-label="Previous completed week" disabled={!previousCompleted} onClick={() => chooseWeek(previousCompleted.index)}>‹</button>
             <button className="play-button" aria-label={playing ? 'Pause playback' : 'Play weekly snapshots'}
-              disabled={!playing && (available.length < 2 || index + 1 >= weeks.length || weeks[index + 1]?.status === 'missing')}
+              disabled={!playing && !canPlay}
               onClick={() => setPlaying(value => !value)}>{playing ? 'Ⅱ PAUSE' : '▶ PLAY'}</button>
-            <button aria-label="Next week" disabled={index >= weeks.length - 1} onClick={() => chooseWeek(index + 1)}>›</button></div>
-            <div className="week-track"><div className="week-marks">{weeks.map((item, n) => <span key={item.id} title={`${item.id}: ${item.status}`}
-              className={`${item.status} ${n === index ? 'chosen' : ''}`} />)}</div>
-              <input type="range" min="0" max={Math.max(0, weeks.length - 1)} value={index}
-                aria-label="Select ISO week" onChange={event => chooseWeek(Number(event.target.value))} />
-              <div className="track-labels"><span>{weeks[0]?.id}</span><span>{weeks.at(-1)?.id}</span></div></div>
+            <button aria-label="Next completed week" disabled={!nextCompleted} onClick={() => chooseWeek(nextCompleted.index)}>›</button></div>
+            <div className={`week-track ${completed.length < 3 ? 'short-track' : ''}`}>
+              {completed.length < 3 ? <div className="short-weeks">{completed.map(item => <button key={item.id}
+                aria-pressed={index === item.index} onClick={() => chooseWeek(item.index)}>{item.id}</button>)}</div> : <>
+                <div className="week-marks">{completed.map(item => <span key={item.id} title={`${item.id}: completed`}
+                  className={item.index === index ? 'complete chosen' : 'complete'} />)}</div>
+                <input type="range" min="0" max={completed.length - 1} value={Math.max(0, completedPosition)}
+                  aria-label="Select completed week" onChange={event => chooseWeek(completed[Number(event.target.value)].index)} />
+                <div className="track-labels"><span>{completed[0]?.id}</span><span>{completed.at(-1)?.id}</span></div></>}
+            </div>
+            {preview >= 0 && <button className="preview-button" aria-pressed={index === preview} onClick={() => chooseWeek(preview)}>LIVE PREVIEW · {weeks[preview].id.slice(-3)}</button>}
             <label className="speed-control">SPEED <select value={speed} onChange={event => setSpeed(Number(event.target.value))}>
               <option value="3.2">0.5×</option><option value="1.8">1×</option><option value=".9">2×</option></select></label>
             <button className="reduce-button" aria-pressed={reduced} onClick={() => setReduced(value => !value)}>{reduced ? 'INSTANT' : 'MOTION ON'}</button>
             {Object.keys(manifests).length > 1 && <select className="series-control" aria-label="Data series" value={series} onChange={event => {
               setPlaying(false); setSeries(event.target.value); const next = manifests[event.target.value]; setYear(next.default_year)
-              setIndex(Math.max(0, next.years[String(next.default_year)].weeks.findIndex(w => w.status !== 'missing')))
+              setIndex(Math.max(0, next.years[String(next.default_year)].weeks.findIndex(w => w.status === 'complete')))
             }}><option value="live">Sitewide stats</option><option value="dump">Historical full dump</option></select>}
             {years.length > 1 && <select className="year-control" aria-label="Year" value={year} onChange={event => {
-              const next = Number(event.target.value); setYear(next); setIndex(Math.max(0, manifest.years[String(next)].weeks.findIndex(w => w.status !== 'missing')))
+              const next = Number(event.target.value); setYear(next); setIndex(Math.max(0, manifest.years[String(next)].weeks.findIndex(w => w.status === 'complete')))
             }}>{years.map(item => <option key={item}>{item}</option>)}</select>}
           </div>
-          <div className="timeline-note"><span>{available.length} observed of {weeks.length} ISO weeks · empty ticks are missing or future</span>
-            <span>Frames between weeks are animation, not measured intermediate values.</span></div>
+          <div className="timeline-note"><span>{completed.length} completed week{completed.length === 1 ? '' : 's'} available{preview >= 0 ? ' · current week is a separate preview' : ''}. {completed.length < 2 ? 'Play needs two adjacent completed weeks.' : !canPlay && week?.status === 'complete' ? 'Play stops here until the next completed week.' : ''}</span>
+            <span>Missing weeks stay missing. Frames between completed weeks are visual animation, not observations.</span></div>
         </div>
       </>}
     </main>

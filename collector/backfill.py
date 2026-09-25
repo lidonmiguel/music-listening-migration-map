@@ -12,6 +12,7 @@ import itertools
 import json
 import re
 import secrets
+import shutil
 import sqlite3
 import subprocess
 import tarfile
@@ -65,6 +66,25 @@ def verify_archive(path: Path, expected_digest: str) -> str:
     if digest.hexdigest() != expected_digest:
         raise ValueError("Full dump archive SHA-256 mismatch")
     return digest.hexdigest()
+
+
+def preflight(archive: Path | None, workdir: Path, expected_bytes: int = 0) -> dict:
+    """Conservative batch-host gate; the actual SQLite size depends on user activity."""
+    archive_bytes = archive.stat().st_size if archive and archive.is_file() else expected_bytes
+    if archive_bytes <= 0:
+        raise ValueError("Supply a local archive or its official size in bytes")
+    free = shutil.disk_usage(workdir).free
+    # Reserve at least one compressed-archive-sized volume for the private DB.
+    # SHA-256 and decompression each read the entire compressed archive.
+    minimum_work_bytes = max(10 * 1024**3, archive_bytes)
+    return {"archive_present": bool(archive and archive.is_file()),
+            "compressed_archive_bytes": archive_bytes,
+            "free_work_bytes": free, "minimum_private_db_bytes": minimum_work_bytes,
+            "zstd_available": shutil.which("zstd") is not None,
+            "ready": bool(archive and archive.is_file()) and free >= minimum_work_bytes
+                     and shutil.which("zstd") is not None,
+            "read_only_lower_bound_hours_at_100MBps": round(archive_bytes * 2 / 100_000_000 / 3600, 1),
+            "note": "Lower bound covers checksum and compressed scan only; JSON parsing, SQLite, and overlap may take many more hours."}
 
 
 def prepare_db(connection: sqlite3.Connection) -> None:
@@ -241,16 +261,30 @@ def publish_year(conn: sqlite3.Connection, year: int, captured: date, digest: st
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--archive", required=True, type=Path, help="official full listens .tar.zst")
-    parser.add_argument("--sha256", required=True, help="expected digest from the official mirror")
-    parser.add_argument("--archive-id", required=True, help="published ListenBrainz full-dump ID")
-    parser.add_argument("--captured", required=True, type=date.fromisoformat)
+    parser.add_argument("--archive", type=Path, help="official full listens .tar.zst")
+    parser.add_argument("--sha256", help="expected digest from the official mirror")
+    parser.add_argument("--archive-id", help="published ListenBrainz full-dump ID")
+    parser.add_argument("--captured", type=date.fromisoformat)
     parser.add_argument("--year", type=int, default=2026)
     parser.add_argument("--output", type=Path, default=DATA / "weekly-dump")
+    parser.add_argument("--workdir", type=Path, default=Path(tempfile.gettempdir()),
+                        help="private scratch volume for the temporary SQLite database")
+    parser.add_argument("--preflight", action="store_true", help="report resources without reading the archive")
+    parser.add_argument("--expected-archive-bytes", type=int, default=0,
+                        help="official size for a preflight before downloading")
     args = parser.parse_args()
+    args.workdir.mkdir(parents=True, exist_ok=True)
+    check = preflight(args.archive, args.workdir, args.expected_archive_bytes)
+    if args.preflight:
+        print(json.dumps(check, indent=2))
+        return
+    if not check["ready"]:
+        parser.error(f"Insufficient batch resources: {check}")
+    if not args.archive_id or not args.captured or not args.sha256:
+        parser.error("--archive-id, --captured, and --sha256 are required for processing")
     digest = verify_archive(args.archive, args.sha256)
     allowed = {slot["id"] for slot in eligible_weeks(args.year, args.captured)}
-    with tempfile.TemporaryDirectory(prefix="music-map-private-") as private:
+    with tempfile.TemporaryDirectory(prefix="music-map-private-", dir=args.workdir) as private:
         with sqlite3.connect(Path(private) / "aggregate.db") as conn:
             prepare_db(conn)
             months = scan_archive(args.archive, conn, args.year, allowed)

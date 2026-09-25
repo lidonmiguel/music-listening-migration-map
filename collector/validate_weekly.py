@@ -1,4 +1,5 @@
 """Fail publication if a weekly snapshot misstates its period or provenance."""
+import hashlib
 import json
 import re
 import sys
@@ -56,6 +57,8 @@ def validate_manifest(path: Path) -> dict:
                 if snapshot["source"]["range"] != ("this_week" if entry["status"] == "partial" else "week"):
                     raise ValueError("Wrong API source range")
                 calculated = datetime.fromisoformat(snapshot["source"]["last_calculated_utc"].replace("Z", "+00:00"))
+                if entry.get("source_last_calculated_utc") != snapshot["source"]["last_calculated_utc"]:
+                    raise ValueError("Manifest and API freshness disagree")
                 if calculated > datetime.now(timezone.utc) or calculated.date() < date.fromisoformat(entry["start"]):
                     raise ValueError("Invalid source calculation time")
                 if entry["status"] == "complete" and calculated.date() < date.fromisoformat(entry["end_exclusive"]):
@@ -63,6 +66,21 @@ def validate_manifest(path: Path) -> dict:
             elif snapshot["source"]["kind"] == "listenbrainz_full_dump":
                 if entry["status"] != "complete" or snapshot.get("reference_edges"):
                     raise ValueError("Dump graph and source status conflict")
+                source = snapshot["source"]
+                if not source.get("archive_id") or not re.fullmatch(r"[0-9a-f]{64}", source.get("archive_sha256", "")):
+                    raise ValueError("Dump source is missing an archive identity or digest")
+                if date.fromisoformat(source["archive_captured_date"]) < date.fromisoformat(entry["end_exclusive"]):
+                    raise ValueError("Dump capture predates this complete week")
+                if hashlib.sha256(snapshot_path.read_bytes()).hexdigest() != entry["signature"]:
+                    raise ValueError("Dump snapshot content differs from manifest digest")
+                quality = snapshot["quality"]
+                if any(type(quality.get(k)) is not int or quality[k] < 0 for k in
+                       ("input_rows", "excluded_missing_mbid", "missing_user_rows", "client_submitted_id_rows")):
+                    raise ValueError("Invalid dump quality counts")
+                if quality["excluded_missing_mbid"] + quality["client_submitted_id_rows"] > quality["input_rows"]:
+                    raise ValueError("Dump quality counts exceed input rows")
+                if snapshot["weekly_relationship_status"] == "measured_weighted_jaccard" and quality["missing_user_rows"]:
+                    raise ValueError("Weekly overlap claimed without complete user coverage")
             else:
                 raise ValueError("Unknown snapshot source")
             pair_keys = set()

@@ -8,8 +8,9 @@ import tempfile
 import unittest
 from datetime import date, datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
-from backfill import audience_edges, mbids_for_listen, prepare_db, publish_year, scan_archive
+from backfill import audience_edges, mbids_for_listen, preflight, prepare_db, publish_year, scan_archive
 from validate_weekly import validate_manifest
 from weekly import snapshot_from_api, source_week, weeks_of_iso_year
 
@@ -69,6 +70,19 @@ class WeeklyRules(unittest.TestCase):
                 snapshot = json.loads((Path(directory) / "weekly-dump" / "2026-W01.json").read_text())
                 self.assertEqual(snapshot["weekly_relationship_status"], "measured_weighted_jaccard")
                 self.assertEqual(snapshot["movement"]["observed_transitions"], [])
+                week_file = Path(directory) / "weekly-dump" / "2026-W01.json"
+                week_file.write_text(week_file.read_text() + " ")
+                with self.assertRaisesRegex(ValueError, "content differs"):
+                    validate_manifest(manifest)
+
+    def test_preflight_rejects_missing_archive_and_insufficient_scratch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            volume = Path(directory)
+            with patch("backfill.shutil.disk_usage", return_value=shutil._ntuple_diskusage(30, 25, 5)):
+                check = preflight(None, volume, 229 * 1024**3)
+            self.assertFalse(check["ready"])
+            self.assertFalse(check["archive_present"])
+            self.assertGreater(check["minimum_private_db_bytes"], check["free_work_bytes"])
 
     @unittest.skipUnless(shutil.which("zstd"), "zstd needed for archive stream test")
     def test_full_dump_stream_reads_real_week_without_publishing_users(self):
