@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { scaleSqrt } from 'd3-scale'
 
 const BASE = import.meta.env.BASE_URL
